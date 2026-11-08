@@ -1,0 +1,18 @@
+name: BeforeTheFall
+version: 0.1.0-paper
+main: ru.artem.beforethefall.BeforeTheFallPlugin
+api-version: '1.21'
+authors: [Community Port]
+description: Server-side survival systems inspired by Before the Fall.
+commands:
+  beforethefall:
+    description: Before the Fall administration and status command
+    aliases: [bft, bfall]
+    usage: /beforethefall <status|ashstorm|radiation|zone|reload>
+permissions:
+  beforethefall.admin:
+    description: Allows administration of BeforeTheFall
+    default: op
+  beforethefall.status:
+    description: Allows viewing personal contamination status
+    default: true
