@@ -1,0 +1,38 @@
+name: Build Paper plugin
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10'
+      - name: Compile and test
+        run: gradle --no-daemon clean test build
+      - name: Verify plugin descriptor
+        run: jar tf build/libs/BeforeTheFall-Paper-0.1.0-paper.jar | grep -q '^plugin.yml$'
+      - name: Upload plugin JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: BeforeTheFall-Paper-1.21.4
+          path: build/libs/BeforeTheFall-Paper-*.jar
+          if-no-files-found: error
+          retention-days: 30
