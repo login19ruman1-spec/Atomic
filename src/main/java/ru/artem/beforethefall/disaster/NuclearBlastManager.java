@@ -60,7 +60,7 @@ public final class NuclearBlastManager {
 
         new BukkitRunnable() {
             int tick = 0;
-            final List<Block> blocks = plugin.getConfig().getBoolean("nuclear-blast.destroy-blocks", true)
+            final List<BlockPos> blocks = plugin.getConfig().getBoolean("nuclear-blast.destroy-blocks", true)
                     ? collectDestructionBlocks(center, Math.max(2, Math.min(25, plugin.getConfig().getInt("nuclear-blast.block-radius", 25))))
                     : List.of();
             int blockCursor = 0;
@@ -80,7 +80,7 @@ public final class NuclearBlastManager {
                         player.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 100, 0, true, false, true));
                         player.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA, 300, 1, true, false, true));
                         player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 160, 1, true, false, true));
-                        player.damage(Math.max(2.0, 30.0 * exposure));
+                        if (distance <= 50.0) player.damage(Math.max(2.0, 30.0 * exposure));
                         radiation.add(player, 38.0 * exposure);
                     }
                 }
@@ -88,7 +88,9 @@ public final class NuclearBlastManager {
                 // Keep edits bounded to avoid freezing the Paper main thread.
                 int edits = 0;
                 while (blockCursor < blocks.size() && edits < 120) {
-                    Block block = blocks.get(blockCursor++);
+                    BlockPos pos = blocks.get(blockCursor++);
+                    if (!world.isChunkLoaded(pos.x >> 4, pos.z >> 4)) continue;
+                    Block block = world.getBlockAt(pos.x, pos.y, pos.z);
                     Material type = block.getType();
                     if (type.isAir() || type.getHardness() < 0 || block.getState() instanceof org.bukkit.block.TileState) continue;
                     if (type == Material.BEDROCK || type == Material.END_PORTAL_FRAME) continue;
@@ -181,23 +183,25 @@ public final class NuclearBlastManager {
         }.runTaskTimer(plugin, 1L, 2L);
     }
 
-    private List<Block> collectDestructionBlocks(Location center, int blockRadius) {
-        List<Block> result = new ArrayList<>();
+    private List<BlockPos> collectDestructionBlocks(Location center, int blockRadius) {
+        // Store coordinates only; resolve blocks in bounded batches and never force-load chunks.
+        List<BlockPos> result = new ArrayList<>();
         World world = center.getWorld();
         if (world == null) return result;
         int cx = center.getBlockX(), cy = center.getBlockY(), cz = center.getBlockZ();
         int r2 = blockRadius * blockRadius;
-        for (int x = -blockRadius; x <= blockRadius; x++)
-            for (int y = -blockRadius; y <= blockRadius; y++)
-                for (int z = -blockRadius; z <= blockRadius; z++)
-                    if (x*x + y*y + z*z <= r2) {
-                        int yy = cy + y;
-                        if (yy >= world.getMinHeight() && yy < world.getMaxHeight())
-                            result.add(world.getBlockAt(cx + x, yy, cz + z));
-                    }
-        result.sort(Comparator.comparingDouble(block -> block.getLocation().distanceSquared(center)));
+        for (int x = -blockRadius; x <= blockRadius; x++) {
+            for (int y = -blockRadius; y <= blockRadius; y++) {
+                int yy = cy + y;
+                if (yy < world.getMinHeight() || yy >= world.getMaxHeight()) continue;
+                for (int z = -blockRadius; z <= blockRadius; z++) {
+                    if (x*x + y*y + z*z <= r2) result.add(new BlockPos(cx + x, yy, cz + z));
+                }
+            }
+        }
         return result;
     }
+    private record BlockPos(int x, int y, int z) { }
 
     private void spawnShockRing(World world, Location center, double radius, int tick) {
         if (radius <= 0) return;
