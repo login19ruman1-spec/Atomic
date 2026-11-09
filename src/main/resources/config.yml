@@ -1,4 +1,3 @@
-# BeforeTheFall Paper 1.21.4
 radiation:
   enabled: true
   tick-interval: 40
@@ -20,6 +19,8 @@ ash-storm:
   deposits-per-player: 5
 nuclear-blast:
   default-power: 18.0
+gas-mask:
+  filter-duration-seconds: 900
 messages:
   prefix: '&8[&6BeforeTheFall&8] &r'
   no-permission: '&cНедостаточно прав.'

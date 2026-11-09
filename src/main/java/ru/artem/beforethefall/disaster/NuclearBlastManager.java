@@ -1,6 +1,5 @@
 package ru.artem.beforethefall.disaster;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -11,18 +10,14 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import ru.artem.beforethefall.BeforeTheFallPlugin;
 import ru.artem.beforethefall.radiation.RadiationManager;
-
 import java.util.concurrent.ThreadLocalRandom;
 
 public final class NuclearBlastManager {
     private final BeforeTheFallPlugin plugin;
     private final RadiationManager radiation;
-
     public NuclearBlastManager(BeforeTheFallPlugin plugin, RadiationManager radiation) {
-        this.plugin = plugin;
-        this.radiation = radiation;
+        this.plugin = plugin; this.radiation = radiation;
     }
-
     public void detonate(Location origin, float power) {
         World world = origin.getWorld();
         if (world == null) return;
@@ -32,23 +27,21 @@ public final class NuclearBlastManager {
         world.spawnParticle(Particle.FLASH, origin, 1);
         world.spawnParticle(Particle.EXPLOSION_EMITTER, origin, 1);
         world.createExplosion(origin, safePower, false, false);
-
         for (Player player : world.getPlayers()) {
             double distance = player.getLocation().distance(origin);
             if (distance > radius * 1.35) continue;
             double exposure = Math.max(0.0, 1.0 - distance / (radius * 1.35));
             player.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, (int)(80 + exposure * 180), 0, true, false, true));
             player.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA, (int)(240 + exposure * 600), 0, true, false, true));
-            player.damage(Math.max(2.0, 26.0 * exposure), null);
-            radiation.set(player, Math.min(100.0, radiation.get(player) + 35.0 * exposure));
+            player.damage(Math.max(2.0, 26.0 * exposure));
+            double maskFactor = plugin.getGasMaskManager().isProtected(player) ? 0.35 : 1.0;
+            radiation.add(player, 35.0 * exposure * maskFactor);
         }
-
         new BukkitRunnable() {
             int phase = 0;
             @Override public void run() {
                 if (phase >= 12) { cancel(); return; }
-                double height = phase * 4.0;
-                double cloudRadius = 2.0 + phase * 2.3;
+                double height = phase * 4.0, cloudRadius = 2.0 + phase * 2.3;
                 int particles = 100 + phase * 35;
                 for (int i = 0; i < particles; i++) {
                     double angle = ThreadLocalRandom.current().nextDouble(Math.PI * 2);
