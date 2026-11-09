@@ -50,7 +50,7 @@ public final class RadiationManager {
         double ambient = plugin.getConfig().getDouble("radiation.ambient-per-tick", 0.15);
         for (Player player : Bukkit.getOnlinePlayers()) {
             double current = Math.max(0.0, get(player) - decay) + radiationAt(player.getLocation()) * ambient;
-            if (wearingProtection(player)) current *= 0.75;
+            if (plugin.getGasMaskManager().isProtected(player)) current *= 0.15;\n            else if (wearingProtection(player)) current *= 0.75;
             levels.put(player.getUniqueId(), clamp(current));
             applySymptoms(player);
         }
