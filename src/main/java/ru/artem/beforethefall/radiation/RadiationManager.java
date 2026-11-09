@@ -37,6 +37,7 @@ public final class RadiationManager {
         fallout.add(new FalloutZone(center.getWorld().getUID(), center.getX(), center.getY(), center.getZ(),
                 Math.max(0.0, intensity), Math.max(1.0, radius), System.currentTimeMillis() + Math.max(0L, durationTicks) * 50L));
         saveFallout();
+        plugin.saveConfig();
     }
 
     public void save() {
@@ -95,7 +96,8 @@ public final class RadiationManager {
     private void tick() {
         ticks++;
         long now = System.currentTimeMillis();
-        fallout.removeIf(z -> z.expiresAt <= now);
+        boolean removedZones = fallout.removeIf(z -> z.expiresAt <= now);
+        if (removedZones) save();
         double decay = Math.max(0.0, plugin.getConfig().getDouble("radiation.decay-per-tick", 0.025));
         for (Player player : Bukkit.getOnlinePlayers()) {
             Location loc = player.getLocation();
@@ -115,6 +117,8 @@ public final class RadiationManager {
             }
             applySymptoms(player);
         }
+        // Persist player doses periodically, not on every gameplay tick.
+        if (ticks % 150 == 0) save();
     }
     private double radiationAt(Location loc) {
         double result = 0.0;
@@ -137,6 +141,10 @@ public final class RadiationManager {
         else if(v>=75){p.addPotionEffect(new PotionEffect(PotionEffectType.POISON,100,0,true,false,true));p.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA,100,1,true,false,true));p.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS,100,1,true,false,true));}
         else if(v>=50){p.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA,100,0,true,false,true));p.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS,100,0,true,false,true));p.addPotionEffect(new PotionEffect(PotionEffectType.HUNGER,100,1,true,false,true));}
         else if(v>=25){p.addPotionEffect(new PotionEffect(PotionEffectType.HUNGER,100,0,true,false,true));}
+        else { p.removePotionEffect(PotionEffectType.HUNGER); p.removePotionEffect(PotionEffectType.NAUSEA); }
+        if(v<50) p.removePotionEffect(PotionEffectType.WEAKNESS);
+        if(v<75) p.removePotionEffect(PotionEffectType.POISON);
+        if(v<90) { p.removePotionEffect(PotionEffectType.WITHER); p.removePotionEffect(PotionEffectType.SLOWNESS); }
         if(v>=90 && ticks%3==0)p.damage(1.0);
     }
     private double clamp(double v){return Math.max(0.0,Math.min(100.0,v));}
