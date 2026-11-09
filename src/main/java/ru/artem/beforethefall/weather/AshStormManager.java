@@ -39,6 +39,7 @@ public final class AshStormManager {
             World world = player.getWorld();
             ThreadLocalRandom random = ThreadLocalRandom.current();
             boolean protectedByMask = plugin.getGasMaskManager().isProtected(player);
+            boolean protectedByBunker = plugin.getBunkerManager() != null && plugin.getBunkerManager().isProtected(center);
             for (int i = 0; i < count; i++) {
                 double angle = random.nextDouble(0, Math.PI * 2), radius = random.nextDouble(3.0, 22.0);
                 Location ash = center.clone().add(Math.cos(angle) * radius, random.nextDouble(-2.0, 15.0), Math.sin(angle) * radius);
@@ -49,13 +50,13 @@ public final class AshStormManager {
             for (int ring = 0; ring < rings; ring++)
                 world.spawnParticle(Particle.ASH, center.clone().add(0, 5.0 + ring * 3.0, 0), 45, 10.0, 1.8, 10.0, 0.01);
             if (ticks % 40 == 0 && plugin.getConfig().getBoolean("ash-storm.accumulate-ash", true)) depositAsh(world, center);
-            if (!protectedByMask && ticks % 40 == 0 && plugin.getConfig().getBoolean("frost.enabled", true)) {
+            if (!protectedByMask && !protectedByBunker && ticks % 40 == 0 && plugin.getConfig().getBoolean("frost.enabled", true)) {
                 int freeze = Math.max(0, plugin.getConfig().getInt("frost.freeze-ticks-per-pulse", 80));
                 player.setFreezeTicks(Math.min(player.getMaxFreezeTicks(), player.getFreezeTicks() + freeze));
                 double frostDamage = Math.max(0.0, plugin.getConfig().getDouble("frost.damage", 1.0));
                 if (frostDamage > 0.0) player.damage(frostDamage);
             }
-            if (!protectedByMask) {
+            if (!protectedByMask && !protectedByBunker) {
                 if (plugin.getConfig().getBoolean("ash-storm.apply-slowness", true))
                     player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 35, plugin.getConfig().getInt("ash-storm.slowness-amplifier", 0), true, false, true));
                 if (plugin.getConfig().getBoolean("ash-storm.blindness", true))
