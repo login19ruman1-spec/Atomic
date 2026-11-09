@@ -8,7 +8,7 @@ commands:
   beforethefall:
     description: Before the Fall administration and status command
     aliases: [bft, bfall]
-    usage: /beforethefall <status|ashstorm|radiation|zone|reload>
+    usage: /beforethefall <status|menu|gasmask|ashstorm|nuke|radiation|zone|reload>
 permissions:
   beforethefall.admin:
     description: Allows administration of BeforeTheFall

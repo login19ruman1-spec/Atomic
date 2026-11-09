@@ -9,14 +9,14 @@ radiation:
   zones: []
 ash-storm:
   enabled: true
-  particle-count: 220
+  particle-count: 450
   cloud-rings: 3
   apply-slowness: true
   slowness-amplifier: 0
   blindness: true
   damage: 0.0
   accumulate-ash: true
-  deposits-per-player: 5
+  deposits-per-player: 14
 nuclear-blast:
   default-power: 18.0
 gas-mask:
@@ -27,3 +27,7 @@ messages:
   player-only: '&cЭта команда доступна только игроку.'
   ash-started: '&eПепельная буря началась.'
   ash-stopped: '&aПепельная буря закончилась.'
+frost:
+  enabled: true
+  damage: 1.0
+  freeze-ticks-per-pulse: 80

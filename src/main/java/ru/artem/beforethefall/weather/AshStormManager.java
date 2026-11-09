@@ -32,7 +32,7 @@ public final class AshStormManager {
     private void tick() {
         if (!active) return;
         ticks += 10;
-        int count = Math.max(20, plugin.getConfig().getInt("ash-storm.particle-count", 220));
+        int count = Math.max(20, Math.min(900, plugin.getConfig().getInt("ash-storm.particle-count", 450)));
         int rings = Math.max(1, plugin.getConfig().getInt("ash-storm.cloud-rings", 3));
         for (Player player : Bukkit.getOnlinePlayers()) {
             Location center = player.getLocation();
@@ -48,7 +48,13 @@ public final class AshStormManager {
             }
             for (int ring = 0; ring < rings; ring++)
                 world.spawnParticle(Particle.ASH, center.clone().add(0, 5.0 + ring * 3.0, 0), 45, 10.0, 1.8, 10.0, 0.01);
-            if (ticks % 100 == 0 && plugin.getConfig().getBoolean("ash-storm.accumulate-ash", true)) depositAsh(world, center);
+            if (ticks % 40 == 0 && plugin.getConfig().getBoolean("ash-storm.accumulate-ash", true)) depositAsh(world, center);
+            if (!protectedByMask && ticks % 40 == 0 && plugin.getConfig().getBoolean("frost.enabled", true)) {
+                int freeze = Math.max(0, plugin.getConfig().getInt("frost.freeze-ticks-per-pulse", 80));
+                player.setFreezeTicks(Math.min(player.getMaxFreezeTicks(), player.getFreezeTicks() + freeze));
+                double frostDamage = Math.max(0.0, plugin.getConfig().getDouble("frost.damage", 1.0));
+                if (frostDamage > 0.0) player.damage(frostDamage);
+            }
             if (!protectedByMask) {
                 if (plugin.getConfig().getBoolean("ash-storm.apply-slowness", true))
                     player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 35, plugin.getConfig().getInt("ash-storm.slowness-amplifier", 0), true, false, true));
@@ -61,8 +67,8 @@ public final class AshStormManager {
     }
     private void depositAsh(World world, Location around) {
         ThreadLocalRandom random = ThreadLocalRandom.current();
-        for (int i = 0; i < Math.max(0, plugin.getConfig().getInt("ash-storm.deposits-per-player", 5)); i++) {
-            int x = around.getBlockX() + random.nextInt(-12, 13), z = around.getBlockZ() + random.nextInt(-12, 13);
+        for (int i = 0; i < Math.max(0, Math.min(64, plugin.getConfig().getInt("ash-storm.deposits-per-player", 14))); i++) {
+            int x = around.getBlockX() + random.nextInt(-16, 17), z = around.getBlockZ() + random.nextInt(-16, 17);
             int y = world.getHighestBlockYAt(x, z);
             Block top = world.getBlockAt(x, y, z), layer = top.getRelative(BlockFace.UP);
             if (top.getType().isSolid() && (layer.getType().isAir() || layer.getType() == Material.SNOW)) {
