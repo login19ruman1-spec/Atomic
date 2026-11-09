@@ -28,7 +28,15 @@ jobs:
       - name: Compile and test
         run: gradle --no-daemon clean test build
       - name: Verify plugin descriptor
-        run: jar tf build/libs/BeforeTheFall-Paper-0.1.0-paper.jar | grep -q '^plugin.yml$'
+        run: jar tf build/libs/BeforeTheFall-Paper-*.jar | grep -q '^plugin.yml
+      - name: Upload plugin JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: BeforeTheFall-Paper-1.21.4
+          path: build/libs/BeforeTheFall-Paper-*.jar
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Upload plugin JAR
         uses: actions/upload-artifact@v4
         with:

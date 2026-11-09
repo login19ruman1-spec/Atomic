@@ -42,12 +42,20 @@ public final class BeforeTheFallCommand implements CommandExecutor, TabCompleter
             sender.sendMessage(color("&7Пепельная буря: " + (ash.isActive() ? "&cактивна" : "&aнеактивна")));
             boolean maskOn = plugin.getGasMaskManager().isProtected(player);
             sender.sendMessage(color("&7Противогаз: " + (maskOn ? "&aзащищает" : "&cне защищает (надень маску / проверь фильтр)")));
+            sender.sendMessage(color("&7Фильтр: &e" + plugin.getGasMaskManager().remainingSeconds(player.getInventory().getHelmet()) + " сек."));
+            sender.sendMessage(color("&7Бункер: " + (plugin.getBunkerManager().isProtected(player.getLocation()) ? "&aзащищает" : "&cвне зоны защиты")));
             return true;
         }
         if (args[0].equalsIgnoreCase("menu")) {
             if (!(sender instanceof Player player)) { sender.sendMessage(color("&cКоманда доступна только игроку.")); return true; }
             if (!sender.hasPermission("beforethefall.admin")) { sender.sendMessage(message("no-permission", "&cНедостаточно прав.")); return true; }
             plugin.openStormSettings(player);
+            return true;
+        }
+        if (args[0].equalsIgnoreCase("filter")) {
+            if (!(sender instanceof Player player)) { sender.sendMessage(color("&cКоманда доступна только игроку.")); return true; }
+            player.getInventory().addItem(plugin.getGasMaskManager().createFilter()).values().forEach(item -> player.getWorld().dropItemNaturally(player.getLocation(), item));
+            player.sendMessage(color("&aТы получил сменный фильтр. Возьми его в руку и нажми ПКМ, надев противогаз."));
             return true;
         }
         if (args[0].equalsIgnoreCase("gasmask")) {
@@ -102,7 +110,7 @@ public final class BeforeTheFallCommand implements CommandExecutor, TabCompleter
                 sender.sendMessage(color("&aКонфигурация BeforeTheFall перезагружена."));
             }
             case "zone" -> sender.sendMessage(color("&eЗоны радиации задаются в config.yml: radiation.zones."));
-            default -> sender.sendMessage(color("&eКоманды: /bft status, /bft menu, /bft gasmask, /bft ashstorm [on|off], /bft nuke [мощность], /bft radiation <игрок> <0-100>, /bft zone, /bft reload"));
+            default -> sender.sendMessage(color("&eКоманды: /bft status, /bft menu, /bft gasmask, /bft filter, /bft ashstorm [on|off], /bft nuke [мощность], /bft radiation <игрок> <0-100>, /bft zone, /bft reload"));
         }
         return true;
     }
@@ -111,7 +119,7 @@ public final class BeforeTheFallCommand implements CommandExecutor, TabCompleter
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         List<String> result = new ArrayList<>();
         if (args.length == 1) {
-            for (String option : List.of("status", "menu", "gasmask", "ashstorm", "nuke", "radiation", "zone", "reload")) {
+            for (String option : List.of("status", "menu", "gasmask", "filter", "ashstorm", "nuke", "radiation", "zone", "reload")) {
                 if (option.startsWith(args[0].toLowerCase(Locale.ROOT))) result.add(option);
             }
         } else if (args.length == 2 && args[0].equalsIgnoreCase("ashstorm")) {

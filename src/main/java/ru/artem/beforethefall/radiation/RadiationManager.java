@@ -49,7 +49,9 @@ public final class RadiationManager {
         double decay = plugin.getConfig().getDouble("radiation.decay-per-tick", 0.1);
         double ambient = plugin.getConfig().getDouble("radiation.ambient-per-tick", 0.15);
         for (Player player : Bukkit.getOnlinePlayers()) {
-            double current = Math.max(0.0, get(player) - decay) + radiationAt(player.getLocation()) * ambient;
+            double current = plugin.getBunkerManager() != null && plugin.getBunkerManager().isProtected(player.getLocation())
+                    ? Math.max(0.0, get(player) - decay * 2.0)
+                    : Math.max(0.0, get(player) - decay) + radiationAt(player.getLocation()) * ambient;
             if (plugin.getGasMaskManager().isProtected(player)) current *= 0.15;
             else if (wearingProtection(player)) current *= 0.75;
             levels.put(player.getUniqueId(), clamp(current));

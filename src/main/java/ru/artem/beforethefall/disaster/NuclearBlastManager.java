@@ -29,6 +29,7 @@ public final class NuclearBlastManager {
         world.createExplosion(origin, safePower, false, false);
         for (Player player : world.getPlayers()) {
             double distance = player.getLocation().distance(origin);
+            if (plugin.getBunkerManager() != null && plugin.getBunkerManager().isProtected(player.getLocation())) continue;
             if (distance > radius * 1.35) continue;
             double exposure = Math.max(0.0, 1.0 - distance / (radius * 1.35));
             player.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, (int)(80 + exposure * 180), 0, true, false, true));
