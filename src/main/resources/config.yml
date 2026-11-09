@@ -21,6 +21,13 @@ nuclear-blast:
   default-power: 18.0
 gas-mask:
   filter-duration-seconds: 900
+bunkers:
+  radius: 12
+  depth: 12
+  height: 8
+  cores: []
+resource-pack:
+  url: ""
 messages:
   prefix: '&8[&6BeforeTheFall&8] &r'
   no-permission: '&cНедостаточно прав.'
