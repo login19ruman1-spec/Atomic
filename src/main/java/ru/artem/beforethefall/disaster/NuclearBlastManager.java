@@ -1,29 +1,28 @@
 package ru.artem.beforethefall.disaster;
 
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.Particle;
-import org.bukkit.Sound;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Display;
+import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.Transformation;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 import ru.artem.beforethefall.BeforeTheFallPlugin;
 import ru.artem.beforethefall.radiation.RadiationManager;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.Comparator;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Staged nuclear detonation: flash, expanding shock front, delayed player impact,
- * controlled block damage, and a persistent mushroom cloud.
+ * Multi-stage nuclear detonation with a custom resource-pack billboard,
+ * expanding shockwave, per-player distant sound layers, camera shake,
+ * block damage and persistent fallout.
  */
 public final class NuclearBlastManager {
     private final BeforeTheFallPlugin plugin;
@@ -41,19 +40,25 @@ public final class NuclearBlastManager {
         final double radius = p * 9.0;
         final Location center = origin.clone();
 
+        // Keep the flash local; long-distance audio is sent directly to each listener
+        // so terrain, buildings and caves do not muffle the global warning layers.
         world.playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 10.0f, 0.45f);
         world.playSound(center, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 8.0f, 0.55f);
         world.spawnParticle(Particle.FLASH, center, 2);
         world.spawnParticle(Particle.EXPLOSION_EMITTER, center, 1);
         world.spawnParticle(Particle.END_ROD, center.clone().add(0, 2, 0), 80, 1.2, 1.2, 1.2, 0.15);
 
-        radiation.addFalloutZone(center, Math.min(28.0, p * 1.15), radius * 1.8, 20L * 60L * 60L);
+        playGlobalSoundLayers(world, center);
+        startEarthquake(world, center);
+        spawnTexturedBlast(world, center, p);
+        radiation.addFalloutZone(center, plugin.getConfig().getDouble("nuclear-blast.fallout-intensity", 100.0),
+                plugin.getConfig().getDouble("nuclear-blast.fallout-radius", 400.0),
+                20L * 60L * 60L * plugin.getConfig().getLong("nuclear-blast.fallout-duration-hours", 72L));
 
-        // The shock front expands over several seconds; nearby players are hit first.
         new BukkitRunnable() {
             int tick = 0;
             final List<Block> blocks = plugin.getConfig().getBoolean("nuclear-blast.destroy-blocks", true)
-                    ? collectDestructionBlocks(center, Math.max(2, Math.min(24, plugin.getConfig().getInt("nuclear-blast.block-radius", 12))))
+                    ? collectDestructionBlocks(center, Math.max(2, Math.min(25, plugin.getConfig().getInt("nuclear-blast.block-radius", 25))))
                     : List.of();
             int blockCursor = 0;
             final Set<UUID> hitPlayers = new HashSet<>();
@@ -77,15 +82,18 @@ public final class NuclearBlastManager {
                     }
                 }
 
-                // Limit block edits per tick to avoid a single long main-thread stall.
+                // Keep edits bounded to avoid freezing the Paper main thread.
                 int edits = 0;
-                while (blockCursor < blocks.size() && edits < 180) {
-                    Block b = blocks.get(blockCursor++);
-                    if (b.getType().isAir() || b.getType().getHardness() < 0 || b.getState() instanceof org.bukkit.block.TileState) continue;
-                    if (b.getType() == Material.BEDROCK || b.getType() == Material.END_PORTAL_FRAME) continue;
-                    b.breakNaturally();
-                    if (ThreadLocalRandom.current().nextDouble() < 0.025 && b.getType().isAir() && !b.getRelative(0, -1, 0).getType().isAir())
-                        b.setType(Material.FIRE, false);
+                while (blockCursor < blocks.size() && edits < 120) {
+                    Block block = blocks.get(blockCursor++);
+                    Material type = block.getType();
+                    if (type.isAir() || type.getHardness() < 0 || block.getState() instanceof org.bukkit.block.TileState) continue;
+                    if (type == Material.BEDROCK || type == Material.END_PORTAL_FRAME) continue;
+                    block.breakNaturally();
+                    if (ThreadLocalRandom.current().nextDouble() < 0.035
+                            && block.getType().isAir() && !block.getRelative(0, -1, 0).getType().isAir()) {
+                        block.setType(Material.FIRE, false);
+                    }
                     edits++;
                 }
 
@@ -94,6 +102,80 @@ public final class NuclearBlastManager {
                 if (tick > 80 && blockCursor >= blocks.size()) cancel();
             }
         }.runTaskTimer(plugin, 1L, 1L);
+    }
+
+    private void playGlobalSoundLayers(World world, Location center) {
+        for (Player player : world.getPlayers()) {
+            if (!player.getWorld().equals(world)) continue;
+            double distance = player.getLocation().distance(center);
+            if (distance <= plugin.getConfig().getDouble("nuclear-blast.distant-sound-radius", 3000.0))
+                player.playSound(player.getLocation(), "atomic:detonation_distant", SoundCategory.MASTER, 1.0f, 1.0f);
+            if (distance <= plugin.getConfig().getDouble("nuclear-blast.shock-sound-radius", 2000.0))
+                player.playSound(player.getLocation(), "atomic:shockwave", SoundCategory.MASTER, 1.0f, 1.0f);
+            if (distance <= plugin.getConfig().getDouble("nuclear-blast.close-sound-radius", 50.0))
+                player.playSound(player.getLocation(), "atomic:nuclear_bomb", SoundCategory.MASTER, 1.0f, 1.0f);
+        }
+    }
+
+    private void startEarthquake(World world, Location center) {
+        Map<UUID, float[]> original = new HashMap<>();
+        for (Player player : world.getPlayers()) {
+            double distance = player.getLocation().distance(center);
+            if (distance > 3000.0) continue;
+            Location view = player.getLocation();
+            original.put(player.getUniqueId(), new float[]{view.getYaw(), view.getPitch()});
+        }
+        new BukkitRunnable() {
+            int tick = 0;
+            @Override public void run() {
+                tick++;
+                for (Player player : world.getPlayers()) {
+                    float[] base = original.get(player.getUniqueId());
+                    if (base == null) continue;
+                    double distance = player.getLocation().distance(center);
+                    if (distance > 3000.0) continue;
+                    double strength = distance <= 50 ? 5.0 : distance <= 2000 ? 2.2 : 0.8;
+                    if (plugin.getBunkerManager() != null && plugin.getBunkerManager().isProtected(player.getLocation())) strength *= 0.15;
+                    ThreadLocalRandom random = ThreadLocalRandom.current();
+                    float yaw = (float)(Math.sin(tick * 0.8) * strength + random.nextDouble(-strength, strength));
+                    float pitch = (float)(Math.cos(tick * 0.65) * strength * .45 + random.nextDouble(-strength * .45, strength * .45));
+                    player.setRotation(base[0] + yaw, Math.max(-90f, Math.min(90f, base[1] + pitch)));
+                    if (tick % 10 == 0) player.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA, 25, distance <= 50 ? 2 : 0, true, false, true));
+                }
+                if (tick >= 160) {
+                    for (Player player : world.getPlayers()) {
+                        float[] base = original.get(player.getUniqueId());
+                        if (base != null) player.setRotation(base[0], base[1]);
+                    }
+                    cancel();
+                }
+            }
+        }.runTaskTimer(plugin, 1L, 1L);
+    }
+
+    private void spawnTexturedBlast(World world, Location center, float power) {
+        ItemStack sprite = new ItemStack(Material.FIREWORK_STAR);
+        ItemMeta meta = sprite.getItemMeta();
+        meta.setCustomModelData(5);
+        sprite.setItemMeta(meta);
+        ItemDisplay display = world.spawn(center.clone().add(0, 8, 0), ItemDisplay.class);
+        display.setItemStack(sprite);
+        display.setBillboard(Display.Billboard.CENTER);
+        display.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
+        display.setViewRange(2.0f);
+        float scale = Math.max(24f, Math.min(72f, power * 2.2f));
+        display.setTransformation(new Transformation(new Vector3f(), new Quaternionf(), new Vector3f(scale, scale, scale), new Quaternionf()));
+        new BukkitRunnable() {
+            int age = 0;
+            @Override public void run() {
+                age++;
+                if (!display.isValid() || age > 100) { display.remove(); cancel(); return; }
+                float grow = scale * (1.0f + Math.min(.55f, age / 70.0f));
+                display.setTransformation(new Transformation(new Vector3f(), new Quaternionf(), new Vector3f(grow, grow, grow), new Quaternionf()));
+                display.setInterpolationDelay(0);
+                display.setInterpolationDuration(2);
+            }
+        }.runTaskTimer(plugin, 1L, 2L);
     }
 
     private List<Block> collectDestructionBlocks(Location center, int blockRadius) {
@@ -110,7 +192,7 @@ public final class NuclearBlastManager {
                         if (yy >= world.getMinHeight() && yy < world.getMaxHeight())
                             result.add(world.getBlockAt(cx + x, yy, cz + z));
                     }
-        result.sort(Comparator.comparingDouble(b -> b.getLocation().distanceSquared(center)));
+        result.sort(Comparator.comparingDouble(block -> block.getLocation().distanceSquared(center)));
         return result;
     }
 
