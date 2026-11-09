@@ -2,103 +2,117 @@ package ru.artem.beforethefall.radiation;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Particle;
+import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 import ru.artem.beforethefall.BeforeTheFallPlugin;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 public final class RadiationManager {
     private final BeforeTheFallPlugin plugin;
-    private final Map<UUID, Double> levels = new HashMap<>();
+    private final Map<UUID, Double> doses = new HashMap<>();
+    private final List<FalloutZone> fallout = new ArrayList<>();
     private BukkitTask task;
+    private long ticks;
 
     public RadiationManager(BeforeTheFallPlugin plugin) { this.plugin = plugin; load(); }
-
     public void start() {
         if (!plugin.getConfig().getBoolean("radiation.enabled", true)) return;
         long interval = Math.max(20L, plugin.getConfig().getLong("radiation.tick-interval", 40L));
         task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, interval, interval);
     }
-
     public void reload() { if (task != null) task.cancel(); start(); }
-    public double get(Player player) { return levels.getOrDefault(player.getUniqueId(), 0.0); }
-    public void set(Player player, double value) { levels.put(player.getUniqueId(), clamp(value)); applySymptoms(player); }
+    public double get(Player player) { return doses.getOrDefault(player.getUniqueId(), 0.0); }
+    public void set(Player player, double value) { doses.put(player.getUniqueId(), clamp(value)); applySymptoms(player); }
     public void add(Player player, double value) { set(player, get(player) + value); }
 
+    /** Creates a persistent radioactive fallout source centered on a detonation. */
+    public void addFalloutZone(Location center, double intensity, double radius, long durationTicks) {
+        if (center.getWorld() == null) return;
+        fallout.add(new FalloutZone(center.getWorld().getUID(), center.getX(), center.getY(), center.getZ(),
+                Math.max(0.0, intensity), Math.max(1.0, radius), System.currentTimeMillis() + Math.max(0L, durationTicks) * 50L));
+        saveFallout();
+    }
+
     public void save() {
-        for (Map.Entry<UUID, Double> entry : levels.entrySet()) plugin.getConfig().set("player-data." + entry.getKey() + ".radiation", entry.getValue());
+        for (Map.Entry<UUID, Double> entry : doses.entrySet())
+            plugin.getConfig().set("player-data." + entry.getKey() + ".radiation", entry.getValue());
+        saveFallout();
         plugin.saveConfig();
     }
-
     private void load() {
         ConfigurationSection section = plugin.getConfig().getConfigurationSection("player-data");
-        if (section == null) return;
-        for (String key : section.getKeys(false)) {
-            try { UUID id = UUID.fromString(key); levels.put(id, section.getDouble(key + ".radiation", 0.0)); }
+        if (section != null) for (String key : section.getKeys(false)) {
+            try { doses.put(UUID.fromString(key), clamp(section.getDouble(key + ".radiation", 0.0))); }
             catch (IllegalArgumentException ignored) { plugin.getLogger().warning("Skipping invalid player UUID: " + key); }
         }
+        for (Map<?, ?> z : plugin.getConfig().getMapList("radiation.fallout-zones")) {
+            try {
+                UUID world = UUID.fromString(String.valueOf(z.get("world")));
+                fallout.add(new FalloutZone(world, num(z.get("x")), num(z.get("y")), num(z.get("z")),
+                    num(z.get("intensity")), Math.max(1.0, num(z.get("radius"))), (long)num(z.get("expires-at"))));
+            } catch (RuntimeException ignored) { plugin.getLogger().warning("Skipping malformed fallout zone."); }
+        }
     }
-
+    private void saveFallout() {
+        List<Map<String,Object>> values = new ArrayList<>();
+        long now = System.currentTimeMillis();
+        for (FalloutZone z : fallout) if (z.expiresAt > now) {
+            Map<String,Object> m = new LinkedHashMap<>();
+            m.put("world",z.world.toString());m.put("x",z.x);m.put("y",z.y);m.put("z",z.z);
+            m.put("intensity",z.intensity);m.put("radius",z.radius);m.put("expires-at",z.expiresAt);values.add(m);
+        }
+        plugin.getConfig().set("radiation.fallout-zones", values);
+    }
     private void tick() {
-        double decay = plugin.getConfig().getDouble("radiation.decay-per-tick", 0.1);
-        double ambient = plugin.getConfig().getDouble("radiation.ambient-per-tick", 0.15);
+        ticks++;
+        long now = System.currentTimeMillis();
+        fallout.removeIf(z -> z.expiresAt <= now);
+        double decay = Math.max(0.0, plugin.getConfig().getDouble("radiation.decay-per-tick", 0.025));
         for (Player player : Bukkit.getOnlinePlayers()) {
-            double current = plugin.getBunkerManager() != null && plugin.getBunkerManager().isProtected(player.getLocation())
-                    ? Math.max(0.0, get(player) - decay * 2.0)
-                    : Math.max(0.0, get(player) - decay) + radiationAt(player.getLocation()) * ambient;
-            if (plugin.getGasMaskManager().isProtected(player)) current *= 0.15;
-            else if (wearingProtection(player)) current *= 0.75;
-            levels.put(player.getUniqueId(), clamp(current));
+            Location loc = player.getLocation();
+            boolean bunker = plugin.getBunkerManager() != null && plugin.getBunkerManager().isProtected(loc);
+            double source = bunker ? 0.0 : radiationAt(loc);
+            // A gas-mask filter blocks inhaled radioactive dust, not penetrating gamma radiation.
+            double inhalationFactor = plugin.getGasMaskManager().isProtected(player) ? 0.18 : 1.0;
+            double intake = source * inhalationFactor;
+            double oldDose = get(player);
+            double next = Math.max(0.0, oldDose - decay) + intake;
+            doses.put(player.getUniqueId(), clamp(next));
+            if (intake > 0.01 && ticks % 2 == 0) {
+                World w = player.getWorld();
+                w.spawnParticle(Particle.WITCH, loc.clone().add(0, 1.0, 0), 2, .25, .35, .25, .01);
+            }
             applySymptoms(player);
         }
     }
-
-    private double radiationAt(Location location) {
-        double level = 0.0;
+    private double radiationAt(Location loc) {
+        double result = 0.0;
         for (Map<?, ?> zone : plugin.getConfig().getMapList("radiation.zones")) {
-            Object worldName = zone.get("world");
-            if (worldName == null || location.getWorld() == null || !location.getWorld().getName().equals(String.valueOf(worldName))) continue;
-            double x = number(zone.get("x")), y = number(zone.get("y")), z = number(zone.get("z"));
-            double radius = Math.max(1.0, number(zone.get("radius")));
-            Location center = new Location(location.getWorld(), x, y, z);
-            if (location.distanceSquared(center) <= radius * radius) level = Math.max(level, number(zone.get("level")));
+            if (!loc.getWorld().getName().equals(String.valueOf(zone.get("world")))) continue;
+            double dx=loc.getX()-num(zone.get("x")),dy=loc.getY()-num(zone.get("y")),dz=loc.getZ()-num(zone.get("z"));
+            double radius=Math.max(1.0,num(zone.get("radius"))),d2=dx*dx+dy*dy+dz*dz;
+            if(d2<=radius*radius) result=Math.max(result,num(zone.get("level"))/(1.0+d2/64.0));
         }
-        return level;
+        for(FalloutZone z:fallout) if(z.world.equals(loc.getWorld().getUID())) {
+            double dx=loc.getX()-z.x,dy=loc.getY()-z.y,dz=loc.getZ()-z.z,d2=dx*dx+dy*dy+dz*dz;
+            if(d2<=z.radius*z.radius) result+=z.intensity/(1.0+d2/100.0);
+        }
+        return result * plugin.getConfig().getDouble("radiation.intake-scale", 0.12);
     }
-
-    private double number(Object value) { return value instanceof Number n ? n.doubleValue() : 0.0; }
-
-    private boolean wearingProtection(Player player) {
-        String[] names = {
-            player.getInventory().getHelmet() == null ? "" : player.getInventory().getHelmet().getType().name(),
-            player.getInventory().getChestplate() == null ? "" : player.getInventory().getChestplate().getType().name(),
-            player.getInventory().getLeggings() == null ? "" : player.getInventory().getLeggings().getType().name(),
-            player.getInventory().getBoots() == null ? "" : player.getInventory().getBoots().getType().name()
-        };
-        int pieces = 0;
-        for (String name : names) if (name.contains("LEATHER") || name.contains("IRON") || name.contains("GOLDEN") || name.contains("DIAMOND") || name.contains("NETHERITE")) pieces++;
-        return pieces >= 4;
+    private double num(Object o){return o instanceof Number n?n.doubleValue():0.0;}
+    private void applySymptoms(Player p) {
+        double v=get(p);
+        if(v>=90){p.addPotionEffect(new PotionEffect(PotionEffectType.WITHER,100,1,true,false,true));p.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA,100,1,true,false,true));p.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS,100,1,true,false,true));}
+        else if(v>=75){p.addPotionEffect(new PotionEffect(PotionEffectType.POISON,100,0,true,false,true));p.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA,100,1,true,false,true));p.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS,100,1,true,false,true));}
+        else if(v>=50){p.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA,100,0,true,false,true));p.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS,100,0,true,false,true));p.addPotionEffect(new PotionEffect(PotionEffectType.HUNGER,100,1,true,false,true));}
+        else if(v>=25){p.addPotionEffect(new PotionEffect(PotionEffectType.HUNGER,100,0,true,false,true));}
+        if(v>=90 && ticks%3==0)p.damage(1.0);
     }
-
-    private void applySymptoms(Player player) {
-        double value = get(player);
-        double warning = plugin.getConfig().getDouble("radiation.warning-threshold", 20.0);
-        double sick = plugin.getConfig().getDouble("radiation.sickness-threshold", 45.0);
-        double severe = plugin.getConfig().getDouble("radiation.severe-threshold", 75.0);
-        if (value >= severe) {
-            player.addPotionEffect(new PotionEffect(PotionEffectType.WITHER, 100, 0, true, false, true));
-            player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 100, 0, true, false, true));
-        } else if (value >= sick) {
-            player.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA, 100, 0, true, false, true));
-            player.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS, 100, 0, true, false, true));
-        } else if (value >= warning) player.addPotionEffect(new PotionEffect(PotionEffectType.HUNGER, 100, 0, true, false, true));
-    }
-
-    private double clamp(double value) { return Math.max(0.0, Math.min(100.0, value)); }
+    private double clamp(double v){return Math.max(0.0,Math.min(100.0,v));}
+    private record FalloutZone(UUID world,double x,double y,double z,double intensity,double radius,long expiresAt){}
 }
