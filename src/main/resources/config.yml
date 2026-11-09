@@ -27,7 +27,7 @@ bunkers:
   height: 8
   cores: []
 resource-pack:
-  url: ""
+  url: "https://raw.githubusercontent.com/login19ruman1-spec/Atomic/main/src/main/resources/resourcepack.zip"
 messages:
   prefix: '&8[&6BeforeTheFall&8] &r'
   no-permission: '&cНедостаточно прав.'
