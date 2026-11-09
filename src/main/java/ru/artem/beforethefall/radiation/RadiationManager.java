@@ -79,7 +79,8 @@ public final class RadiationManager {
             double source = bunker ? 0.0 : radiationAt(loc);
             // A gas-mask filter blocks inhaled radioactive dust, not penetrating gamma radiation.
             double inhalationFactor = plugin.getGasMaskManager().isProtected(player) ? 0.18 : 1.0;
-            double intake = source * inhalationFactor;
+            double suitFactor = plugin.getProtectiveSuitManager() != null && plugin.getProtectiveSuitManager().hasFullSuit(player) ? 0.45 : 1.0;
+            double intake = source * inhalationFactor * suitFactor;
             double oldDose = get(player);
             double next = Math.max(0.0, oldDose - decay) + intake;
             doses.put(player.getUniqueId(), clamp(next));
