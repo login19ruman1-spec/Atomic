@@ -52,7 +52,7 @@ public final class BeforeTheFallCommand implements CommandExecutor, TabCompleter
             plugin.openStormSettings(player);
             return true;
         }
-        if (args[0].equalsIgnoreCase("filter")) {
+        if (args[0].equalsIgnoreCase("filter") || args[0].equalsIgnoreCase("gasmask")) {\n            sender.sendMessage(color("&eПротивогаз и фильтр можно получить только крафтом. Команда выдачи отключена."));\n            return true;\n        }\n        if (args[0].equalsIgnoreCase("filter")) {
             if (!(sender instanceof Player player)) { sender.sendMessage(color("&cКоманда доступна только игроку.")); return true; }
             player.getInventory().addItem(plugin.getGasMaskManager().createFilter()).values().forEach(item -> player.getWorld().dropItemNaturally(player.getLocation(), item));
             player.sendMessage(color("&aТы получил сменный фильтр. Возьми его в руку и нажми ПКМ, надев противогаз."));

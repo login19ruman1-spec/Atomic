@@ -1,22 +1,18 @@
 radiation:
   enabled: true
   tick-interval: 40
-  ambient-per-tick: 0.15
-  decay-per-tick: 0.10
-  warning-threshold: 20.0
-  sickness-threshold: 45.0
+  intake-scale: 0.12
+  decay-per-tick: 0.025
+  warning-threshold: 25.0
+  sickness-threshold: 50.0
   severe-threshold: 75.0
   zones: []
+  fallout-zones: []
 ash-storm:
   enabled: true
-  particle-count: 450
-  cloud-rings: 3
-  apply-slowness: true
-  slowness-amplifier: 0
+  particle-count: 220
   blindness: true
   damage: 0.0
-  accumulate-ash: true
-  deposits-per-player: 14
 nuclear-blast:
   default-power: 18.0
 gas-mask:
@@ -34,7 +30,3 @@ messages:
   player-only: '&cЭта команда доступна только игроку.'
   ash-started: '&eПепельная буря началась.'
   ash-stopped: '&aПепельная буря закончилась.'
-frost:
-  enabled: true
-  damage: 1.0
-  freeze-ticks-per-pulse: 80

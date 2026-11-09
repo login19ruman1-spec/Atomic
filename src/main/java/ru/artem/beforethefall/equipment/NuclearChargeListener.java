@@ -1,0 +1,7 @@
+package ru.artem.beforethefall.equipment;
+import org.bukkit.ChatColor;import org.bukkit.Material;import org.bukkit.event.EventHandler;import org.bukkit.event.Listener;import org.bukkit.event.block.Action;import org.bukkit.event.player.PlayerInteractEvent;import org.bukkit.inventory.EquipmentSlot;import org.bukkit.inventory.ItemStack;import org.bukkit.inventory.meta.ItemMeta;import org.bukkit.persistence.CustomModelDataComponent;import org.bukkit.persistence.PersistentDataType;import ru.artem.beforethefall.BeforeTheFallPlugin;
+public final class NuclearChargeListener implements Listener{
+ private final BeforeTheFallPlugin plugin;
+ public NuclearChargeListener(BeforeTheFallPlugin p){plugin=p;}
+ @EventHandler public void onUse(PlayerInteractEvent e){if(e.getHand()!=EquipmentSlot.HAND||!(e.getAction()==Action.RIGHT_CLICK_AIR||e.getAction()==Action.RIGHT_CLICK_BLOCK))return;ItemStack item=e.getItem();if(item==null||item.getType()!=Material.TNT||!item.hasItemMeta())return;ItemMeta meta=item.getItemMeta();if(!meta.hasCustomModelData()||meta.getCustomModelData()!=3)return;e.setCancelled(true);plugin.getNuclearBlastManager().detonate(e.getPlayer().getLocation(),(float)plugin.getConfig().getDouble("nuclear-blast.default-power",18.0));if(item.getAmount()>1)item.setAmount(item.getAmount()-1);else e.getPlayer().getInventory().setItemInMainHand(null);e.getPlayer().sendMessage(ChatColor.DARK_RED+"☢ Ядерный заряд активирован!");}
+}

@@ -15,7 +15,7 @@ public final class BeforeTheFallPlugin extends JavaPlugin {
  @Override public void onEnable() {
   saveDefaultConfig(); stormSettingsMenu=new StormSettingsMenu(this); getServer().getPluginManager().registerEvents(stormSettingsMenu,this);
   radiationManager=new RadiationManager(this); ashStormManager=new AshStormManager(this); gasMaskManager=new GasMaskManager(this); nuclearBlastManager=new NuclearBlastManager(this,radiationManager); bunkerManager=new BunkerManager(this);
-  getServer().getPluginManager().registerEvents(gasMaskManager,this); getServer().getPluginManager().registerEvents(bunkerManager,this); getServer().getPluginManager().registerEvents(new ResourcePackManager(this),this);
+  getServer().getPluginManager().registerEvents(gasMaskManager,this); getServer().getPluginManager().registerEvents(new ru.artem.beforethefall.equipment.NuclearChargeListener(this),this); getServer().getPluginManager().registerEvents(bunkerManager,this); getServer().getPluginManager().registerEvents(new ResourcePackManager(this),this);
   new SurvivalCraftingManager(this).register(); radiationManager.start(); ashStormManager.start(); gasMaskManager.start();
   BeforeTheFallCommand executor=new BeforeTheFallCommand(this,radiationManager,ashStormManager,nuclearBlastManager); PluginCommand command=getCommand("beforethefall");
   if(command!=null){command.setExecutor(executor);command.setTabCompleter(executor);} getLogger().info("BeforeTheFall Atomic Survival enabled. Paper 1.21.4 / Java 21.");
