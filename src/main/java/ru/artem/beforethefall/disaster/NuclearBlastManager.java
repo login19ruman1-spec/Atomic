@@ -49,7 +49,7 @@ public final class NuclearBlastManager {
         new BukkitRunnable() {
             int tick = 0;
             final List<Block> blocks = plugin.getConfig().getBoolean("nuclear-blast.destroy-blocks", true)
-                    ? collectDestructionBlocks(center, Math.min(12, Math.max(4, (int)(p * 0.65))))
+                    ? collectDestructionBlocks(center, Math.max(2, Math.min(24, plugin.getConfig().getInt("nuclear-blast.block-radius", 12))))
                     : List.of();
             int blockCursor = 0;
 
@@ -79,6 +79,8 @@ public final class NuclearBlastManager {
                     if (b.getType().isAir() || b.getType().getHardness() < 0 || b.getState() instanceof org.bukkit.block.TileState) continue;
                     if (b.getType() == Material.BEDROCK || b.getType() == Material.END_PORTAL_FRAME) continue;
                     b.breakNaturally();
+                    if (ThreadLocalRandom.current().nextDouble() < 0.025 && b.getRelative(0, 1, 0).getType().isAir())
+                        b.getRelative(0, 1, 0).setType(Material.FIRE, false);
                     edits++;
                 }
 
