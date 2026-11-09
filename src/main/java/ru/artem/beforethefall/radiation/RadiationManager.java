@@ -2,6 +2,7 @@ package ru.artem.beforethefall.radiation;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
@@ -80,8 +81,8 @@ public final class RadiationManager {
 
     private boolean isInContaminatedWater(Player player) {
         Location loc = player.getLocation();
-        boolean wet = loc.getBlock().isLiquid() || player.getEyeLocation().getBlock().isLiquid()
-                || loc.clone().subtract(0, 1, 0).getBlock().isLiquid();
+        boolean wet = loc.getBlock().getType() == Material.WATER || player.getEyeLocation().getBlock().getType() == Material.WATER
+                || loc.clone().subtract(0, 1, 0).getBlock().getType() == Material.WATER;
         if (!wet) return false;
         var section = plugin.getConfig().getConfigurationSection("radiation.water-contamination");
         if (section == null || section.getLong("expires-at") <= System.currentTimeMillis()) return false;
