@@ -61,5 +61,15 @@ public final class SurvivalCraftingManager {
         bunker.setIngredient('I', Material.IRON_BLOCK);
         bunker.setIngredient('R', Material.REDSTONE_BLOCK);
         plugin.getServer().addRecipe(bunker);
+
+        var suit = plugin.getProtectiveSuitManager();
+        var helmet = new ShapedRecipe(new NamespacedKey(plugin, "craft_radiation_helmet"), suit.createPiece(Material.LEATHER_HELMET, "шлем"));
+        helmet.shape("LYL", "L L", "   "); helmet.setIngredient('L', Material.LEATHER); helmet.setIngredient('Y', Material.YELLOW_DYE); plugin.getServer().addRecipe(helmet);
+        var chest = new ShapedRecipe(new NamespacedKey(plugin, "craft_radiation_chestplate"), suit.createPiece(Material.LEATHER_CHESTPLATE, "нагрудник"));
+        chest.shape("L L", "LYL", "L L"); chest.setIngredient('L', Material.LEATHER); chest.setIngredient('Y', Material.YELLOW_DYE); plugin.getServer().addRecipe(chest);
+        var legs = new ShapedRecipe(new NamespacedKey(plugin, "craft_radiation_leggings"), suit.createPiece(Material.LEATHER_LEGGINGS, "штаны"));
+        legs.shape("LYL", "L L", "L L"); legs.setIngredient('L', Material.LEATHER); legs.setIngredient('Y', Material.YELLOW_DYE); plugin.getServer().addRecipe(legs);
+        var boots = new ShapedRecipe(new NamespacedKey(plugin, "craft_radiation_boots"), suit.createPiece(Material.LEATHER_BOOTS, "ботинки"));
+        boots.shape("   ", "L L", "L L"); boots.setIngredient('L', Material.LEATHER); plugin.getServer().addRecipe(boots);
     }
 }
