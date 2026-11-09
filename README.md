@@ -56,9 +56,9 @@ Only the plugin-crafted, tagged lodestone activates a bunker. A vanilla lodeston
 
 Craft each piece separately with leather and yellow dye:
 
-- Helmet: `LYL / L L / - - -`
+- Helmet: `LYL / L - L / - - -`
 - Chestplate: `L - L / LYL / L - L`
-- Leggings: `LYL / L L / L L`
+- Leggings: `LYL / L - L / L - L`
 - Boots: `- - - / L - L / L - L`
 
 `L` = leather, `Y` = yellow dye. Wear all four plugin-crafted pieces to reduce radiation intake. Ordinary yellow leather armor does not count.
