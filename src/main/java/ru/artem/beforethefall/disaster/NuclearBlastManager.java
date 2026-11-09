@@ -84,8 +84,8 @@ public final class NuclearBlastManager {
                     if (b.getType().isAir() || b.getType().getHardness() < 0 || b.getState() instanceof org.bukkit.block.TileState) continue;
                     if (b.getType() == Material.BEDROCK || b.getType() == Material.END_PORTAL_FRAME) continue;
                     b.breakNaturally();
-                    if (ThreadLocalRandom.current().nextDouble() < 0.025 && b.getRelative(0, 1, 0).getType().isAir())
-                        b.getRelative(0, 1, 0).setType(Material.FIRE, false);
+                    if (ThreadLocalRandom.current().nextDouble() < 0.025 && b.getType().isAir() && !b.getRelative(0, -1, 0).getType().isAir())
+                        b.setType(Material.FIRE, false);
                     edits++;
                 }
 
