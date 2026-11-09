@@ -67,7 +67,7 @@ tasks.register('generateAtomicResourcePack') {
         def itemModel = { String item, String texture ->
             writeText("assets/minecraft/models/item/${item}.json", """{"parent":"minecraft:item/generated","textures":{"layer0":"beforethefall:item/${texture}"},"overrides":[{"predicate":{"custom_model_data":${item=='carved_pumpkin'?1:item=='iron_ingot'?2:item=='tnt'?3:item=='lodestone'?4:5}},"model":"beforethefall:item/${texture}"}]}""")
         }
-        ['gas_mask':'atomic_gas_mask','filter':'atomic_filter','atomic_blast':'atomic_blast'].each { k,v ->
+        ['atomic_gas_mask':'atomic_gas_mask','atomic_filter':'atomic_filter','atomic_blast':'atomic_blast'].each { k,v ->
             writeText("assets/beforethefall/models/item/${k}.json", """{"parent":"minecraft:item/generated","textures":{"layer0":"beforethefall:item/${v}"}}""")
         }
         itemModel('carved_pumpkin','atomic_gas_mask'); itemModel('iron_ingot','atomic_filter'); itemModel('tnt','atomic_blast')
