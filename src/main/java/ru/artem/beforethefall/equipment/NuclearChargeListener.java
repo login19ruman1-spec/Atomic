@@ -67,16 +67,6 @@ public final class NuclearChargeListener implements Listener {
         if (!isPlacedCharge(target)) return;
         event.setCancelled(true);
         trigger(target);
-        if (held == Material.FLINT_AND_STEEL && event.getItem() != null) {
-            ItemStack tool = event.getItem();
-            if (tool.getType() == Material.FLINT_AND_STEEL) {
-                var meta = tool.getItemMeta();
-                if (meta != null && meta.hasDamage()) {
-                    meta.setDamage(Math.min(meta.getDamage() + 1, tool.getType().getMaxDurability()));
-                    tool.setItemMeta(meta);
-                }
-            }
-        }
     }
     @EventHandler
     public void onRedstone(BlockRedstoneEvent event) {
