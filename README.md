@@ -52,6 +52,17 @@ Obsidian    Iron Block      Obsidian
 
 Only the plugin-crafted, tagged lodestone activates a bunker. A vanilla lodestone obtained from Creative or commands does not register a bunker. Default protection radius is 12 blocks, with configurable depth and height.
 
+### Yellow radiation suit
+
+Craft each piece separately with leather and yellow dye:
+
+- Helmet: `LYL / L L / - - -`
+- Chestplate: `L - L / LYL / L - L`
+- Leggings: `LYL / L L / L L`
+- Boots: `- - - / L - L / L - L`
+
+`L` = leather, `Y` = yellow dye. Wear all four plugin-crafted pieces to reduce radiation intake. Ordinary yellow leather armor does not count.
+
 ## Nuclear detonation
 
 The event has a flash, an expanding shock front, a custom resource-pack blast billboard, a rising mushroom cloud, delayed player impact, camera shake and block damage. The configured block damage radius defaults to 25 blocks and is processed in small batches to reduce server stalls. Persistent fallout is configured to a 400-block radius and 72 hours by default.
