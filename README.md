@@ -1,46 +1,82 @@
-# BeforeTheFall — Paper port (Minecraft 1.21.4)
+# BeforeTheFall — Atomic Survival (Paper 1.21.4)
 
-Native server-side reimplementation foundation for Paper 1.21.4 / Java 21. This is not a Forge binary conversion.
+Paper plugin for an atomic-disaster survival scenario. Requires Minecraft 1.21.4 and Java 21.
 
-## Build
+## Install
 
-Requirements: Java 21 and Gradle 8.10+.
+1. Download the latest `BeforeTheFall-Paper` JAR from the successful [GitHub Actions run](https://github.com/login19ruman1-spec/Atomic/actions).
+2. Put it in the server's `plugins/` folder and restart Paper.
+3. The plugin extracts its embedded resource pack to `plugins/BeforeTheFall/resourcepack.zip` and asks clients to download it on join. Set `resource-pack.url` in config if you host the ZIP elsewhere. The client must accept the pack to see custom item textures.
 
-```bash
-gradle clean test build
+## Crafting recipes
+
+The recipes are registered automatically by the plugin. In the 3×3 crafting table, arrange the ingredients exactly as shown (`-` means an empty slot).
+
+### Gas mask
+
+```
+Leather     Glass Pane  Leather
+Iron Ingot  Iron Bars   Iron Ingot
+-           Leather    -
 ```
 
-Output: `build/libs/BeforeTheFall-Paper-0.1.0-paper.jar`.
+### Replaceable filter cartridge
 
-## Implemented in this initial migration slice
+```
+Paper       Charcoal    Paper
+Redstone    Iron Ingot  Redstone
+Paper       Charcoal    Paper
+```
 
-- Persistent player radiation values stored in plugin configuration.
-- Configurable radiation zones, exposure and decay.
-- Radiation sickness stages and potion effects.
-- Basic armor-based radiation mitigation (placeholder heuristic, not original suit logic).
-- Toggleable ash storm with particles, optional slowness and configurable damage.
-- `/beforethefall` (`/bft`) status, ashstorm, radiation, zone and reload commands.
-- GitHub Actions build for Java 21; JAR uploaded as a workflow artifact.
+A cartridge is a custom plugin item, not a vanilla item. Right-click while holding a cartridge to replace the exhausted cartridge in the gas mask (keep the mask equipped in the helmet slot). A fresh filter lasts 15 minutes by default. The filter blocks inhaled radioactive dust; it does not stop penetrating gamma radiation or the direct blast.
 
-## Migration scope and limitations
+### Nuclear charge
 
-The supplied Forge JAR contains a large code/resource surface. Forge mods are not binary-compatible with Paper. This project is a clean-room native server plugin implementation; it does not bundle the original JAR, source code, or assets. The initial slice is not a claim that all original functionality has been ported.
+```
+Gold Ingot    Redstone Block  Gold Ingot
+TNT           Clock           TNT
+Gold Ingot    Redstone Block  Gold Ingot
+```
 
-Further work is needed for original blocks and block entities, machines/energy/wiring, items/equipment, entities/AI, world generation, structures, recipes/loot, faction/base systems, radios/audio and other gameplay systems. Client GUI, rendering, animations, mixins and client networking cannot be reproduced by a Paper-only plugin; those require a resource pack and/or client-side companion mod. Add third-party assets only when you have permission to redistribute them.
+Place the charge item in your hand and right-click to trigger the detonation. The charge is consumed.
 
-The input mod metadata identifies `Before the Fall`, version `0.1.3-fixed`, author `Orkemey`, with `All Rights Reserved`.
+### Bunker core
+
+```
+Obsidian    Iron Block   Obsidian
+Iron Block  Redstone Block Iron Block
+Obsidian    Iron Block   Obsidian
+```
+
+Place the Lodestone core to register a bunker protection area. Default protection radius is 12 blocks; configure `bunkers.radius`, `bunkers.depth` and `bunkers.height` in `config.yml`. The bunker protects against the plugin's radiation and nuclear shock effects inside the configured volume.
+
+## Nuclear detonation and fallout
+
+A detonation is staged rather than a single instantaneous particle: initial flash and blast sound, expanding visible shock front, delayed player impact as the front reaches them, mushroom-shaped smoke/ash cloud, and a persistent radioactive fallout zone. Block damage is enabled by default and limited to a configurable small radius to reduce server load. Bunkers protect players, not blocks.
+
+Relevant settings:
+
+- `nuclear-blast.default-power`: 4–40, default 18.
+- `nuclear-blast.destroy-blocks`: whether the blast damages nearby blocks (default true).
+- `nuclear-blast.block-radius`: maximum block-damage radius (default 12).
+
+Fallout zones persist across restarts and irradiate players who remain nearby. Radiation builds up over time and causes staged sickness effects; leaving the zone allows the dose to decay. The mask filter only reduces the inhalation component, not external gamma exposure.
 
 ## Commands
 
-```text
-/bft
-/bft status
-/bft ashstorm [on|off]
-/bft radiation <player> <0-100>
-/bft zone
-/bft reload
+- `/bft status` — show your current radiation dose.
+- `/bft ashstorm [on|off]` — toggle radioactive ash storm (admin).
+- `/bft nuke [power]` — trigger a test detonation (admin).
+- `/bft radiation <player> <0-100>` — set a player's dose (admin).
+- `/bft zone` — show configured radiation zones.
+- `/bft reload` — reload configuration (admin).
+
+## Build from source
+
+Requires Java 21 and Gradle 8.10+:
+
+```bash
+gradle --no-daemon clean test build
 ```
 
-Permission: `beforethefall.admin` (OP by default).
-
-Radiation zones are configured under `radiation.zones` in `config.yml`.
+The CI workflow builds the plugin and publishes the JAR as an Actions artifact. This is a native Paper implementation, not a binary conversion of the Forge mod. Original mod assets are not redistributed; use only assets you have permission to include.
