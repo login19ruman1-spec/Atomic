@@ -68,6 +68,29 @@ public final class RadiationManager {
         }
         plugin.getConfig().set("radiation.fallout-zones", values);
     }
+    public void contaminateWater(Location center, double radius, long durationTicks) {
+        if (center.getWorld() == null) return;
+        plugin.getConfig().set("radiation.water-contamination.world", center.getWorld().getUID().toString());
+        plugin.getConfig().set("radiation.water-contamination.x", center.getX());
+        plugin.getConfig().set("radiation.water-contamination.z", center.getZ());
+        plugin.getConfig().set("radiation.water-contamination.radius", radius);
+        plugin.getConfig().set("radiation.water-contamination.expires-at", System.currentTimeMillis() + durationTicks * 50L);
+        plugin.saveConfig();
+    }
+
+    private boolean isInContaminatedWater(Player player) {
+        Location loc = player.getLocation();
+        boolean wet = loc.getBlock().isLiquid() || player.getEyeLocation().getBlock().isLiquid()
+                || loc.clone().subtract(0, 1, 0).getBlock().isLiquid();
+        if (!wet) return false;
+        var section = plugin.getConfig().getConfigurationSection("radiation.water-contamination");
+        if (section == null || section.getLong("expires-at") <= System.currentTimeMillis()) return false;
+        if (!loc.getWorld().getUID().toString().equals(section.getString("world"))) return false;
+        double dx = loc.getX() - section.getDouble("x"), dz = loc.getZ() - section.getDouble("z");
+        double radius = section.getDouble("radius", 0.0);
+        return dx * dx + dz * dz <= radius * radius;
+    }
+
     private void tick() {
         ticks++;
         long now = System.currentTimeMillis();
@@ -81,6 +104,7 @@ public final class RadiationManager {
             double inhalationFactor = plugin.getGasMaskManager().isProtected(player) ? 0.18 : 1.0;
             double suitFactor = plugin.getProtectiveSuitManager() != null && plugin.getProtectiveSuitManager().hasFullSuit(player) ? 0.45 : 1.0;
             double intake = source * inhalationFactor * suitFactor;
+            if (!bunker && isInContaminatedWater(player)) intake += plugin.getConfig().getDouble("radiation.contaminated-water-intake", 2.5);
             double oldDose = get(player);
             double next = Math.max(0.0, oldDose - decay) + intake;
             doses.put(player.getUniqueId(), clamp(next));
