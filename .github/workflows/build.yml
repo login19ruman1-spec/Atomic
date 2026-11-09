@@ -33,15 +33,7 @@ jobs:
         run: |
           unzip -t src/main/resources/resourcepack.zip
           unzip -l src/main/resources/resourcepack.zip | grep -E 'atomic_blast.png|pumpkinblur.png|atomic_gas_mask.png|atomic_filter.png'
-          unzip -l build/libs/BeforeTheFall-Paper-*.jar | grep -E ' resourcepack.zip
-      - name: Upload plugin JAR
-        uses: actions/upload-artifact@v4
-        with:
-          name: BeforeTheFall-Paper-1.21.4
-          path: build/libs/BeforeTheFall-Paper-*.jar
-          if-no-files-found: error
-          retention-days: 30
-
+          unzip -l build/libs/BeforeTheFall-Paper-*.jar | grep -E ' resourcepack.zip$'
       - name: Upload plugin JAR
         uses: actions/upload-artifact@v4
         with:
