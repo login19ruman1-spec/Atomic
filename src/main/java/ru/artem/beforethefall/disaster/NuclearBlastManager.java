@@ -26,7 +26,6 @@ public final class NuclearBlastManager {
         world.playSound(origin, Sound.ENTITY_GENERIC_EXPLODE, 8.0f, 0.45f);
         world.spawnParticle(Particle.FLASH, origin, 1);
         world.spawnParticle(Particle.EXPLOSION_EMITTER, origin, 1);
-        world.createExplosion(origin, safePower, false, false);
         for (Player player : world.getPlayers()) {
             double distance = player.getLocation().distance(origin);
             if (plugin.getBunkerManager() != null && plugin.getBunkerManager().isProtected(player.getLocation())) continue;
