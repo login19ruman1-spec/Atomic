@@ -1,23 +1,32 @@
 package ru.artem.beforethefall.weather;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.Particle;
+import org.bukkit.World;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.data.type.Snow;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 import ru.artem.beforethefall.BeforeTheFallPlugin;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 public final class AshStormManager {
     private final BeforeTheFallPlugin plugin;
     private BukkitTask task;
     private boolean active;
+    private long ticks;
 
     public AshStormManager(BeforeTheFallPlugin plugin) { this.plugin = plugin; }
 
     public void start() {
         if (!plugin.getConfig().getBoolean("ash-storm.enabled", true)) return;
-        task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 20L, 20L);
+        task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 10L, 10L);
     }
 
     public void reload() { stop(); start(); }
@@ -27,14 +36,57 @@ public final class AshStormManager {
 
     private void tick() {
         if (!active) return;
-        int count = Math.max(1, plugin.getConfig().getInt("ash-storm.particle-count", 18));
+        ticks += 10;
+        int count = Math.max(20, plugin.getConfig().getInt("ash-storm.particle-count", 220));
+        int rings = Math.max(1, plugin.getConfig().getInt("ash-storm.cloud-rings", 3));
         boolean slow = plugin.getConfig().getBoolean("ash-storm.apply-slowness", true);
         int amplifier = Math.max(0, plugin.getConfig().getInt("ash-storm.slowness-amplifier", 0));
         double damage = Math.max(0.0, plugin.getConfig().getDouble("ash-storm.damage", 0.0));
+        boolean accumulate = plugin.getConfig().getBoolean("ash-storm.accumulate-ash", true);
         for (Player player : Bukkit.getOnlinePlayers()) {
-            player.getWorld().spawnParticle(Particle.ASH, player.getLocation().add(0, 2, 0), count, 5.0, 2.0, 5.0, 0.01);
-            if (slow) player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 60, amplifier, true, false, true));
+            Location center = player.getLocation();
+            World world = player.getWorld();
+            ThreadLocalRandom random = ThreadLocalRandom.current();
+            for (int i = 0; i < count; i++) {
+                double angle = random.nextDouble(0, Math.PI * 2);
+                double radius = random.nextDouble(3.0, 22.0);
+                double x = Math.cos(angle) * radius;
+                double z = Math.sin(angle) * radius;
+                double y = random.nextDouble(-2.0, 15.0);
+                Location ash = center.clone().add(x, y, z);
+                world.spawnParticle(Particle.ASH, ash, 1, 0.18, 0.45, 0.18, 0.012);
+                if (i % 3 == 0) world.spawnParticle(Particle.WHITE_ASH, ash, 1, 0.35, 0.7, 0.35, 0.008);
+                if (i % 8 == 0) world.spawnParticle(Particle.CLOUD, ash, 1, 0.5, 0.2, 0.5, 0.015);
+            }
+            for (int ring = 0; ring < rings; ring++) {
+                double y = 5.0 + ring * 3.0;
+                world.spawnParticle(Particle.ASH, center.clone().add(0, y, 0), 45, 10.0, 1.8, 10.0, 0.01);
+            }
+            if (accumulate && ticks % 100 == 0) depositAsh(world, center);
+            if (slow) player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 35, amplifier, true, false, true));
+            if (plugin.getConfig().getBoolean("ash-storm.blindness", true))
+                player.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, 25, 0, true, false, true));
             if (damage > 0.0) player.damage(damage);
+        }
+    }
+
+    private void depositAsh(World world, Location around) {
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        int deposits = Math.max(0, plugin.getConfig().getInt("ash-storm.deposits-per-player", 5));
+        for (int i = 0; i < deposits; i++) {
+            int x = around.getBlockX() + random.nextInt(-12, 13);
+            int z = around.getBlockZ() + random.nextInt(-12, 13);
+            int y = world.getHighestBlockYAt(x, z);
+            Block top = world.getBlockAt(x, y, z);
+            Block layer = top.getRelative(BlockFace.UP);
+            if (top.getType().isSolid() && (layer.getType().isAir() || layer.getType() == Material.SNOW)) {
+                if (layer.getType().isAir()) layer.setType(Material.SNOW, false);
+                Snow snow = (Snow) layer.getBlockData();
+                if (snow.getLayers() < snow.getMaximumLayers()) {
+                    snow.setLayers(Math.min(snow.getMaximumLayers(), snow.getLayers() + 1));
+                    layer.setBlockData(snow, false);
+                }
+            }
         }
     }
 }

@@ -1,5 +1,4 @@
 # BeforeTheFall Paper 1.21.4
-# Initial server-side port foundation.
 radiation:
   enabled: true
   tick-interval: 40
@@ -9,20 +8,18 @@ radiation:
   sickness-threshold: 45.0
   severe-threshold: 75.0
   zones: []
-  # Example:
-  # zones:
-  #   - world: world
-  #     x: 100
-  #     y: 64
-  #     z: -50
-  #     radius: 48
-  #     level: 3.0
 ash-storm:
   enabled: true
-  particle-count: 18
+  particle-count: 220
+  cloud-rings: 3
   apply-slowness: true
   slowness-amplifier: 0
+  blindness: true
   damage: 0.0
+  accumulate-ash: true
+  deposits-per-player: 5
+nuclear-blast:
+  default-power: 18.0
 messages:
   prefix: '&8[&6BeforeTheFall&8] &r'
   no-permission: '&cНедостаточно прав.'
