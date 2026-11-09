@@ -17,7 +17,6 @@ public final class GasMaskManager {
     private final NamespacedKey marker;
     private final NamespacedKey filter;
     private BukkitTask task;
-    private long ticks;
     public GasMaskManager(BeforeTheFallPlugin plugin) {
         this.plugin = plugin;
         marker = new NamespacedKey(plugin, "gas_mask");
@@ -52,25 +51,21 @@ public final class GasMaskManager {
     }
     public void start() {
         task = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
-            ticks++;
             for (Player player : Bukkit.getOnlinePlayers()) {
                 ItemStack helmet = player.getInventory().getHelmet();
                 if (!isMask(helmet)) continue;
                 int remaining = filterTicks(helmet);
                 if (remaining <= 0) {
-                    if (ticks % 10 == 0) player.sendActionBar(ChatColor.RED + "Фильтр противогаза исчерпан!");
                     continue;
                 }
-                if (ticks % 10 == 0) {
-                    ItemMeta meta = helmet.getItemMeta();
-                    int next = remaining - 1;
-                    meta.getPersistentDataContainer().set(filter, PersistentDataType.INTEGER, next);
-                    meta.setLore(List.of(ChatColor.GRAY + "Фильтрует пепел и радиоактивную пыль",
-                            ChatColor.GRAY + "Осталось: " + next / 2 + " сек.",
-                            next > 0 ? ChatColor.GREEN + "Фильтр работает" : ChatColor.RED + "Фильтр исчерпан"));
-                    helmet.setItemMeta(meta);
-                    if (next == 0) player.sendMessage(ChatColor.RED + "Фильтр противогаза исчерпан. Замени противогаз!");
-                }
+                ItemMeta meta = helmet.getItemMeta();
+                int next = remaining - 1;
+                meta.getPersistentDataContainer().set(filter, PersistentDataType.INTEGER, next);
+                meta.setLore(List.of(ChatColor.GRAY + "Фильтрует пепел и радиоактивную пыль",
+                        ChatColor.GRAY + "Осталось: " + next / 2 + " сек.",
+                        next > 0 ? ChatColor.GREEN + "Фильтр работает" : ChatColor.RED + "Фильтр исчерпан"));
+                helmet.setItemMeta(meta);
+                if (next == 0) player.sendMessage(ChatColor.RED + "Фильтр противогаза исчерпан. Замени противогаз!");
             }
         }, 10L, 10L);
     }

@@ -40,6 +40,8 @@ public final class BeforeTheFallCommand implements CommandExecutor, TabCompleter
             sender.sendMessage(color("&8&m---------&r &6BeforeTheFall &8&m---------"));
             sender.sendMessage(color("&7Радиация: &e" + String.format(Locale.US, "%.1f", radiation.get(player)) + "/100"));
             sender.sendMessage(color("&7Пепельная буря: " + (ash.isActive() ? "&cактивна" : "&aнеактивна")));
+            boolean maskOn = plugin.getGasMaskManager().isProtected(player);
+            sender.sendMessage(color("&7Противогаз: " + (maskOn ? "&aзащищает" : "&cне защищает (надень маску / проверь фильтр)")));
             return true;
         }
         if (args[0].equalsIgnoreCase("gasmask")) {
