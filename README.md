@@ -6,11 +6,11 @@ Paper plugin for an atomic-disaster survival scenario. Requires Minecraft 1.21.4
 
 1. Download the latest `BeforeTheFall-Paper` JAR from the successful [GitHub Actions run](https://github.com/login19ruman1-spec/Atomic/actions).
 2. Put it in the server's `plugins/` folder and restart Paper.
-3. The plugin extracts its embedded resource pack to `plugins/BeforeTheFall/resourcepack.zip` and asks clients to download it on join. Set `resource-pack.url` in config if you host the ZIP elsewhere. The client must accept the pack to see custom item textures.
+3. The plugin extracts its embedded resource pack to `plugins/BeforeTheFall/resourcepack.zip` and asks clients to download it on join. Players must accept the pack to see the custom mask, filter, charge, bunker-core and blast textures.
 
 ## Crafting recipes
 
-The recipes are registered automatically by the plugin. In the 3×3 crafting table, arrange the ingredients exactly as shown (`-` means an empty slot).
+Use a 3×3 crafting table. `-` means an empty slot. The recipes produce plugin-marked items; a vanilla item with the same material is not equivalent.
 
 ### Gas mask
 
@@ -20,7 +20,9 @@ Iron Ingot  Iron Bars   Iron Ingot
 -           Leather    -
 ```
 
-### Replaceable filter cartridge
+Equip the mask in the helmet slot. It does not protect from penetrating gamma radiation or direct blast damage.
+
+### Replacement filter
 
 ```
 Paper       Charcoal    Paper
@@ -28,9 +30,9 @@ Redstone    Iron Ingot  Redstone
 Paper       Charcoal    Paper
 ```
 
-A cartridge is a custom plugin item, not a vanilla item. Right-click while holding a cartridge to replace the exhausted cartridge in the gas mask (keep the mask equipped in the helmet slot). A fresh filter lasts 15 minutes by default. The filter blocks inhaled radioactive dust; it does not stop penetrating gamma radiation or the direct blast.
+The redstone is on the left and right of the centre iron ingot. This is the corrected recipe. Right-click while holding the crafted filter with the mask equipped. One cartridge restores 15 minutes of filtration by default. Filters are plugin-tagged; a normal iron ingot cannot replace one.
 
-### Nuclear charge
+### Nuclear TNT charge
 
 ```
 Gold Ingot    Redstone Block  Gold Ingot
@@ -38,40 +40,40 @@ TNT           Clock           TNT
 Gold Ingot    Redstone Block  Gold Ingot
 ```
 
-Place the charge item in your hand and right-click to trigger the detonation. The charge is consumed.
+Place the crafted charge as a TNT block. Ignite that placed block with flint and steel/fire charge, or power it with redstone. Holding the item and right-clicking no longer detonates it in your hand. Ordinary TNT and TNT blocks from Creative do not count as plugin nuclear charges.
 
-### Bunker core
+### Bunker core (crafted lodestone)
 
 ```
-Obsidian    Iron Block   Obsidian
-Iron Block  Redstone Block Iron Block
-Obsidian    Iron Block   Obsidian
+Obsidian    Iron Block      Obsidian
+Iron Block  Redstone Block  Iron Block
+Obsidian    Iron Block      Obsidian
 ```
 
-Place the Lodestone core to register a bunker protection area. Default protection radius is 12 blocks; configure `bunkers.radius`, `bunkers.depth` and `bunkers.height` in `config.yml`. The bunker protects against the plugin's radiation and nuclear shock effects inside the configured volume.
+Only the plugin-crafted, tagged lodestone activates a bunker. A vanilla lodestone obtained from Creative or commands does not register a bunker. Default protection radius is 12 blocks, with configurable depth and height.
 
-## Nuclear detonation and fallout
+## Nuclear detonation
 
-A detonation is staged rather than a single instantaneous particle: initial flash and blast sound, expanding visible shock front, delayed player impact as the front reaches them, mushroom-shaped smoke/ash cloud, and a persistent radioactive fallout zone. Block damage is enabled by default and limited to a configurable small radius to reduce server load. Bunkers protect players, not blocks.
+The event has a flash, an expanding shock front, a custom resource-pack blast billboard, a rising mushroom cloud, delayed player impact, camera shake and block damage. The configured block damage radius defaults to 25 blocks and is processed in small batches to reduce server stalls. Persistent fallout is configured to a 400-block radius and 72 hours by default.
 
-Relevant settings:
+Sound layers are sent directly to online players (so buildings and underground positions do not muffle the warning): the distant warning up to 3000 blocks, the shock layer up to 2000 blocks and the close blast within 50 blocks. Current build uses Minecraft's built-in sound events as placeholders; the three uploaded MP3 samples still need to be converted to OGG and included in the pack before those exact recordings can play.
 
-- `nuclear-blast.default-power`: 4–40, default 18.
-- `nuclear-blast.destroy-blocks`: whether the blast damages nearby blocks (default true).
-- `nuclear-blast.block-radius`: maximum block-damage radius (default 12).
+## Ash and fallout
 
-Fallout zones persist across restarts and irradiate players who remain nearby. Radiation builds up over time and causes staged sickness effects; leaving the zone allows the dose to decay. The mask filter only reduces the inhalation component, not external gamma exposure.
+Ash storm particles do not use snow. The resource pack includes an ash-like carpet texture; optional deposits use carpet blocks, not snow layers. The storm can be enabled with `/bft ashstorm on`.
+
+Radiation builds up in fallout zones and causes staged nausea, hunger, weakness, poison and severe illness. A gas-mask filter reduces inhaled radioactive dust; it does not block penetrating gamma radiation. Bunkers suppress the plugin's radiation intake and blast effects for players inside their protected volume.
 
 ## Commands
 
-- `/bft status` — show your current radiation dose.
-- `/bft ashstorm [on|off]` — toggle radioactive ash storm (admin).
-- `/bft nuke [power]` — trigger a test detonation (admin).
+- `/bft status` — show personal radiation and filter status.
+- `/bft ashstorm [on|off]` — toggle ash storm (admin).
+- `/bft nuke [power]` — test detonation at your position (admin).
 - `/bft radiation <player> <0-100>` — set a player's dose (admin).
 - `/bft zone` — show configured radiation zones.
 - `/bft reload` — reload configuration (admin).
 
-## Build from source
+## Build
 
 Requires Java 21 and Gradle 8.10+:
 
@@ -79,4 +81,4 @@ Requires Java 21 and Gradle 8.10+:
 gradle --no-daemon clean test build
 ```
 
-The CI workflow builds the plugin and publishes the JAR as an Actions artifact. This is a native Paper implementation, not a binary conversion of the Forge mod. Original mod assets are not redistributed; use only assets you have permission to include.
+The CI workflow compiles, tests, verifies the embedded resource pack and publishes the plugin JAR as an Actions artifact. This is a native Paper implementation, not a binary conversion of the Forge mod. Original mod assets are not redistributed.

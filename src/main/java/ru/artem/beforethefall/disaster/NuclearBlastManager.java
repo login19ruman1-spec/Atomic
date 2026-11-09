@@ -109,11 +109,11 @@ public final class NuclearBlastManager {
             if (!player.getWorld().equals(world)) continue;
             double distance = player.getLocation().distance(center);
             if (distance <= plugin.getConfig().getDouble("nuclear-blast.distant-sound-radius", 3000.0))
-                player.playSound(player.getLocation(), "atomic:detonation_distant", SoundCategory.MASTER, 1.0f, 1.0f);
+                player.playSound(player.getLocation(), Sound.ENTITY_ELDER_GUARDIAN_CURSE, SoundCategory.MASTER, 1.0f, 0.65f);
             if (distance <= plugin.getConfig().getDouble("nuclear-blast.shock-sound-radius", 2000.0))
-                player.playSound(player.getLocation(), "atomic:shockwave", SoundCategory.MASTER, 1.0f, 1.0f);
+                player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, SoundCategory.MASTER, 1.0f, 0.8f);
             if (distance <= plugin.getConfig().getDouble("nuclear-blast.close-sound-radius", 50.0))
-                player.playSound(player.getLocation(), "atomic:nuclear_bomb", SoundCategory.MASTER, 1.0f, 1.0f);
+                player.playSound(player.getLocation(), Sound.ENTITY_WITHER_SPAWN, SoundCategory.MASTER, 1.0f, 0.55f);
         }
     }
 

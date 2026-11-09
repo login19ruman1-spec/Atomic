@@ -10,13 +10,23 @@ radiation:
   fallout-zones: []
 ash-storm:
   enabled: true
-  particle-count: 220
+  particle-count: 320
   blindness: true
   damage: 0.0
+  deposit-ash: true
+  deposit-chance: 0.06
+  deposit-radius: 18
 nuclear-blast:
   default-power: 18.0
   destroy-blocks: true
-  block-radius: 12
+  block-radius: 25
+  fallout-intensity: 100.0
+  fallout-radius: 400.0
+  fallout-duration-hours: 72
+  distant-sound-radius: 3000.0
+  shock-sound-radius: 2000.0
+  close-sound-radius: 50.0
+  placed-charges: []
 gas-mask:
   filter-duration-seconds: 900
 bunkers:
