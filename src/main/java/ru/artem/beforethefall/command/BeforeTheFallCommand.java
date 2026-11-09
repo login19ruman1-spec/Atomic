@@ -42,7 +42,13 @@ public final class BeforeTheFallCommand implements CommandExecutor, TabCompleter
             sender.sendMessage(color("&7Пепельная буря: " + (ash.isActive() ? "&cактивна" : "&aнеактивна")));
             return true;
         }
-        if (args[0].equalsIgnoreCase("gasmask")) {\n            if (!(sender instanceof Player player)) { sender.sendMessage(color("&cКоманда доступна только игроку.")); return true; }\n            player.getInventory().addItem(plugin.getGasMaskManager().createMask()).values().forEach(item -> player.getWorld().dropItemNaturally(player.getLocation(), item));\n            player.sendMessage(color("&aТы получил противогаз. Надень его в слот шлема; фильтр работает 15 минут."));\n            return true;\n        }\n        if (!sender.hasPermission("beforethefall.admin")) {
+        if (args[0].equalsIgnoreCase("gasmask")) {
+            if (!(sender instanceof Player player)) { sender.sendMessage(color("&cКоманда доступна только игроку.")); return true; }
+            player.getInventory().addItem(plugin.getGasMaskManager().createMask()).values().forEach(item -> player.getWorld().dropItemNaturally(player.getLocation(), item));
+            player.sendMessage(color("&aТы получил противогаз. Надень его в слот шлема; фильтр работает 15 минут."));
+            return true;
+        }
+        if (!sender.hasPermission("beforethefall.admin")) {
             sender.sendMessage(message("no-permission", "&cНедостаточно прав."));
             return true;
         }
