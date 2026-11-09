@@ -27,10 +27,12 @@ import java.util.concurrent.ThreadLocalRandom;
 public final class NuclearBlastManager {
     private final BeforeTheFallPlugin plugin;
     private final RadiationManager radiation;
+    private final AftermathManager aftermath;
 
     public NuclearBlastManager(BeforeTheFallPlugin plugin, RadiationManager radiation) {
         this.plugin = plugin;
         this.radiation = radiation;
+        this.aftermath = new AftermathManager(plugin, radiation);
     }
 
     public void detonate(Location origin, float power) {
@@ -51,6 +53,7 @@ public final class NuclearBlastManager {
         playGlobalSoundLayers(world, center);
         startEarthquake(world, center);
         spawnTexturedBlast(world, center, p);
+        aftermath.apply(center);
         radiation.addFalloutZone(center, plugin.getConfig().getDouble("nuclear-blast.fallout-intensity", 100.0),
                 plugin.getConfig().getDouble("nuclear-blast.fallout-radius", 400.0),
                 20L * 60L * 60L * plugin.getConfig().getLong("nuclear-blast.fallout-duration-hours", 72L));
