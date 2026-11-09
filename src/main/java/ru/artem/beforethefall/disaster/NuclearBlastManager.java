@@ -15,6 +15,10 @@ import ru.artem.beforethefall.radiation.RadiationManager;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.Comparator;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -52,6 +56,7 @@ public final class NuclearBlastManager {
                     ? collectDestructionBlocks(center, Math.max(2, Math.min(24, plugin.getConfig().getInt("nuclear-blast.block-radius", 12))))
                     : List.of();
             int blockCursor = 0;
+            final Set<UUID> hitPlayers = new HashSet<>();
 
             @Override public void run() {
                 tick++;
@@ -63,7 +68,7 @@ public final class NuclearBlastManager {
                     if (distance > radius * 1.35 || distance > front + 2.5) continue;
                     if (plugin.getBunkerManager() != null && plugin.getBunkerManager().isProtected(player.getLocation())) continue;
                     double exposure = Math.max(0.0, 1.0 - distance / (radius * 1.35));
-                    if (player.getNoDamageTicks() <= 0) {
+                    if (hitPlayers.add(player.getUniqueId())) {
                         player.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 100, 0, true, false, true));
                         player.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA, 300, 1, true, false, true));
                         player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 160, 1, true, false, true));
@@ -105,6 +110,7 @@ public final class NuclearBlastManager {
                         if (yy >= world.getMinHeight() && yy < world.getMaxHeight())
                             result.add(world.getBlockAt(cx + x, yy, cz + z));
                     }
+        result.sort(Comparator.comparingDouble(b -> b.getLocation().distanceSquared(center)));
         return result;
     }
 
