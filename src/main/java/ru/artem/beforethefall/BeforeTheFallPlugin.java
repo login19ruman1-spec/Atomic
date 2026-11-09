@@ -21,7 +21,7 @@ public final class BeforeTheFallPlugin extends JavaPlugin {
   if(command!=null){command.setExecutor(executor);command.setTabCompleter(executor);} getLogger().info("BeforeTheFall Atomic Survival enabled. Paper 1.21.4 / Java 21.");
  }
  @Override public void onDisable(){if(radiationManager!=null)radiationManager.save();if(ashStormManager!=null)ashStormManager.stop();if(gasMaskManager!=null)gasMaskManager.stop();}
- public GasMaskManager getGasMaskManager(){return gasMaskManager;} public BunkerManager getBunkerManager(){return bunkerManager;}
+ public GasMaskManager getGasMaskManager(){return gasMaskManager;} public RadiationManager getRadiationManager(){return radiationManager;} public BunkerManager getBunkerManager(){return bunkerManager;}
  public void openStormSettings(org.bukkit.entity.Player player){stormSettingsMenu.open(player);} public NuclearBlastManager getNuclearBlastManager(){return nuclearBlastManager;}
  public void reloadPluginConfig(){reloadConfig();if(radiationManager!=null)radiationManager.reload();if(ashStormManager!=null)ashStormManager.reload();}
 }
