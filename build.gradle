@@ -43,14 +43,14 @@ tasks.register('generateAtomicResourcePack') {
             g.setColor(new java.awt.Color(12,18,17,240)); g.fillRect(0,0,256,25); g.fillRect(0,231,256,25)
         }
         // Small pixel-art inventory icons.
-        png('assets/beforethefall/textures/item/gas_mask.png',16,16) { g, im ->
+        png('assets/beforethefall/textures/item/atomic_gas_mask.png',16,16) { g, im ->
             g.setColor(new java.awt.Color(35,43,39)); g.fillRoundRect(1,3,14,11,3,3)
             g.setColor(new java.awt.Color(90,105,92)); g.fillRect(2,4,12,7)
             g.setColor(new java.awt.Color(105,190,190)); g.fillRect(3,5,4,4); g.fillRect(9,5,4,4)
             g.setColor(new java.awt.Color(15,25,24)); g.fillRect(7,5,2,5)
             g.setColor(new java.awt.Color(160,170,150)); g.fillRect(6,11,4,3)
         }
-        png('assets/beforethefall/textures/item/filter.png',16,16) { g, im ->
+        png('assets/beforethefall/textures/item/atomic_filter.png',16,16) { g, im ->
             g.setColor(new java.awt.Color(45,50,45)); g.fillRect(3,1,10,14)
             g.setColor(new java.awt.Color(125,135,115)); g.fillRect(4,2,8,12)
             g.setColor(new java.awt.Color(35,45,38)); g.fillRect(5,4,6,7)
@@ -67,10 +67,10 @@ tasks.register('generateAtomicResourcePack') {
         def itemModel = { String item, String texture ->
             writeText("assets/minecraft/models/item/${item}.json", """{"parent":"minecraft:item/generated","textures":{"layer0":"beforethefall:item/${texture}"},"overrides":[{"predicate":{"custom_model_data":${item=='carved_pumpkin'?1:item=='iron_ingot'?2:item=='tnt'?3:item=='lodestone'?4:5}},"model":"beforethefall:item/${texture}"}]}""")
         }
-        ['gas_mask':'gas_mask','filter':'filter','atomic_blast':'atomic_blast'].each { k,v ->
+        ['gas_mask':'atomic_gas_mask','filter':'atomic_filter','atomic_blast':'atomic_blast'].each { k,v ->
             writeText("assets/beforethefall/models/item/${k}.json", """{"parent":"minecraft:item/generated","textures":{"layer0":"beforethefall:item/${v}"}}""")
         }
-        itemModel('carved_pumpkin','gas_mask'); itemModel('iron_ingot','filter'); itemModel('tnt','atomic_blast')
+        itemModel('carved_pumpkin','atomic_gas_mask'); itemModel('iron_ingot','atomic_filter'); itemModel('tnt','atomic_blast')
         // The nuclear billboard uses a custom model-data firework star.
         writeText('assets/minecraft/models/item/firework_star.json', '{"parent":"minecraft:item/generated","textures":{"layer0":"minecraft:item/firework_star"},"overrides":[{"predicate":{"custom_model_data":5},"model":"beforethefall:item/atomic_blast"}]}')
         ant.zip(destfile: new File(root.parentFile, 'resourcepack.zip'), basedir: root)
