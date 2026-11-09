@@ -8,6 +8,8 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import ru.artem.beforethefall.BeforeTheFallPlugin;
 import ru.artem.beforethefall.radiation.RadiationManager;
+import ru.artem.beforethefall.disaster.NuclearBlastManager;
+import org.bukkit.Location;
 import ru.artem.beforethefall.weather.AshStormManager;
 
 import java.util.ArrayList;
@@ -18,11 +20,13 @@ public final class BeforeTheFallCommand implements CommandExecutor, TabCompleter
     private final BeforeTheFallPlugin plugin;
     private final RadiationManager radiation;
     private final AshStormManager ash;
+    private final NuclearBlastManager nuclearBlast;
 
-    public BeforeTheFallCommand(BeforeTheFallPlugin plugin, RadiationManager radiation, AshStormManager ash) {
+    public BeforeTheFallCommand(BeforeTheFallPlugin plugin, RadiationManager radiation, AshStormManager ash, NuclearBlastManager nuclearBlast) {
         this.plugin = plugin;
         this.radiation = radiation;
         this.ash = ash;
+        this.nuclearBlast = nuclearBlast;
     }
 
     @Override
@@ -48,6 +52,19 @@ public final class BeforeTheFallCommand implements CommandExecutor, TabCompleter
                 ash.setActive(enable);
                 sender.sendMessage(message(enable ? "ash-started" : "ash-stopped", enable ? "&eПепельная буря началась." : "&aПепельная буря закончилась."));
             }
+            case "nuke" -> {
+                if (!(sender instanceof Player player)) {
+                    sender.sendMessage(color("&cКоманда доступна только игроку."));
+                    return true;
+                }
+                float power = (float) plugin.getConfig().getDouble("nuclear-blast.default-power", 18.0);
+                if (args.length >= 2) {
+                    try { power = Float.parseFloat(args[1]); }
+                    catch (NumberFormatException ex) { sender.sendMessage(color("&cМощность должна быть числом.")); return true; }
+                }
+                nuclearBlast.detonate(player.getLocation(), power);
+                sender.sendMessage(color("&c☢ Ядерный удар инициирован."));
+            }
             case "radiation" -> {
                 if (args.length < 3) {
                     sender.sendMessage(color("&eИспользование: /bft radiation <игрок> <0-100>"));
@@ -71,7 +88,7 @@ public final class BeforeTheFallCommand implements CommandExecutor, TabCompleter
                 sender.sendMessage(color("&aКонфигурация BeforeTheFall перезагружена."));
             }
             case "zone" -> sender.sendMessage(color("&eЗоны радиации задаются в config.yml: radiation.zones."));
-            default -> sender.sendMessage(color("&eКоманды: /bft status, /bft ashstorm [on|off], /bft radiation <игрок> <0-100>, /bft zone, /bft reload"));
+            default -> sender.sendMessage(color("&eКоманды: /bft status, /bft ashstorm [on|off], /bft nuke [мощность], /bft radiation <игрок> <0-100>, /bft zone, /bft reload"));
         }
         return true;
     }
@@ -80,7 +97,7 @@ public final class BeforeTheFallCommand implements CommandExecutor, TabCompleter
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         List<String> result = new ArrayList<>();
         if (args.length == 1) {
-            for (String option : List.of("status", "ashstorm", "radiation", "zone", "reload")) {
+            for (String option : List.of("status", "ashstorm", "nuke", "radiation", "zone", "reload")) {
                 if (option.startsWith(args[0].toLowerCase(Locale.ROOT))) result.add(option);
             }
         } else if (args.length == 2 && args[0].equalsIgnoreCase("ashstorm")) {
