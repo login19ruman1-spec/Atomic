@@ -9,7 +9,7 @@ Paper plugin for an atomic-disaster survival scenario. Requires Minecraft 1.21.4
 
 The pack skins vanilla snow layers as ash while retaining their thin-layer collision and stacking. Vanilla snow layers share the ash texture while the pack is active. Paper cannot register a genuinely separate custom thin-layer block with snow physics without a client mod or block-state workaround.
 
-The gas mask is a plugin-tagged leather helmet with its own resource-pack model, not a carved pumpkin. This removes the pumpkin vignette and avoids covering the screen with the pumpkin overlay. A custom first-person visor overlay that activates only when this helmet is worn requires a client-side mod; a server resource pack cannot conditionally change the camera overlay.
+The gas mask is a plugin-tagged leather helmet with its own Blockbench model, not a carved pumpkin. Its model changes to fogged and cracked variants as it breathes and wears. The mask loses one durability point every 40 seconds while filtering; at 50% or below the visor is cracked, and at 0% the mask breaks. Exhalation also emits a visible breath cloud. The original Blockbench source files are kept in `src/main/resources/blockbench/`; Gradle exports their geometry and embedded textures into the generated resource pack. A custom first-person visor overlay that activates only when this helmet is worn still requires a client-side mod; a server resource pack cannot conditionally change the camera overlay.
 
 ## Crafting
 
