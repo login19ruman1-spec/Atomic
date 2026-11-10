@@ -103,3 +103,6 @@ tasks.register('generateAtomicResourcePack') {
  }
 }
 processResources.dependsOn tasks.named('generateAtomicResourcePack')
+
+
+apply from: 'atomic-assets.gradle'
