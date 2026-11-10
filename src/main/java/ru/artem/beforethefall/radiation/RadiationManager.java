@@ -28,6 +28,12 @@ public final class RadiationManager {
     }
     public void reload() { if (task != null) task.cancel(); start(); }
     public double get(Player player) { return doses.getOrDefault(player.getUniqueId(), 0.0); }
+    /** Current local radiation intensity, as measured by the dosimeter. */
+    public double getAmbientLevel(Player player) {
+        Location location = player.getLocation();
+        boolean bunker = plugin.getBunkerManager() != null && plugin.getBunkerManager().isProtected(location);
+        return bunker ? 0.0 : radiationAt(location);
+    }
     public void set(Player player, double value) { doses.put(player.getUniqueId(), clamp(value)); applySymptoms(player); }
     public void add(Player player, double value) { set(player, get(player) + value); }
 
