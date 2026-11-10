@@ -30,7 +30,6 @@ tasks.named('generateAtomicResourcePack') {
         def soundEvents = [
             blast_distant: 'blast/distant',
             blast_wave: 'blast/wave',
-            blast_close: 'blast/close',
             nuke_charge: 'nuke/charge',
             nuke_launch: 'nuke/launch',
             nuke_blast: 'nuke/blast',
