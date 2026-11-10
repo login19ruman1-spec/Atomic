@@ -110,15 +110,24 @@ public final class NuclearBlastManager {
     }
 
     private void playGlobalSoundLayers(World world, Location center) {
+        // Play at the listener's position: a positional sound at the blast would become
+        // inaudible long before the configured 2-3 km ranges. Exactly one layer is used
+        // per listener, so the distant, wave and close recordings do not stack.
+        double closeRadius = plugin.getConfig().getDouble("nuclear-blast.close-sound-radius", 50.0);
+        double waveRadius = plugin.getConfig().getDouble("nuclear-blast.shock-sound-radius", 2000.0);
+        double distantRadius = plugin.getConfig().getDouble("nuclear-blast.distant-sound-radius", 3000.0);
+
         for (Player player : world.getPlayers()) {
-            if (!player.getWorld().equals(world)) continue;
             double distance = player.getLocation().distance(center);
-            if (distance <= plugin.getConfig().getDouble("nuclear-blast.distant-sound-radius", 3000.0))
-                player.playSound(center, "beforethefall:blast_distant", SoundCategory.MASTER, 1.0f, 1.0f);
-            if (distance <= plugin.getConfig().getDouble("nuclear-blast.shock-sound-radius", 2000.0))
-                player.playSound(center, "beforethefall:blast_wave", SoundCategory.MASTER, 1.0f, 1.0f);
-            if (distance <= plugin.getConfig().getDouble("nuclear-blast.close-sound-radius", 50.0))
-                player.playSound(center, "beforethefall:blast_close", SoundCategory.MASTER, 1.0f, 1.0f);
+            if (distance <= closeRadius) {
+                player.playSound(player.getLocation(), "beforethefall:blast_close", SoundCategory.MASTER, 1.0f, 1.0f);
+            } else if (distance <= waveRadius) {
+                float volume = (float) Math.max(0.35, 0.85 - (distance / waveRadius) * 0.35);
+                player.playSound(player.getLocation(), "beforethefall:blast_wave", SoundCategory.MASTER, volume, 1.0f);
+            } else if (distance <= distantRadius) {
+                float volume = (float) Math.max(0.20, 0.55 - (distance / distantRadius) * 0.25);
+                player.playSound(player.getLocation(), "beforethefall:blast_distant", SoundCategory.MASTER, volume, 1.0f);
+            }
         }
     }
 
