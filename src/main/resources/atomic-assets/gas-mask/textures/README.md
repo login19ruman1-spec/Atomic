@@ -1,5 +1,5 @@
 # Текстуры противогаза
 
-Сюда загружай PNG-текстуры противогаза. Они попадут в `assets/beforethefall/textures/item/`.
+Загружай сюда PNG-текстуры для противогаза и его внутреннего вида. Основные текстуры уже извлекаются из твоих моделей `blockbench/gas_mask.bbmodel` и `blockbench/gas_filter.bbmodel`.
 
-Основная текстура уже извлекается из `src/main/resources/blockbench/gas_mask.bbmodel`. Если заменяешь её вручную, назови файл `gas_mask.png`.
+Если вручную заменяешь текстуру маски, используй имя `gas_mask.png`. PNG-файлы попадут в текстуры resource pack.
