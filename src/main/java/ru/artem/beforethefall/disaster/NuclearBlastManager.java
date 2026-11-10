@@ -114,11 +114,11 @@ public final class NuclearBlastManager {
             if (!player.getWorld().equals(world)) continue;
             double distance = player.getLocation().distance(center);
             if (distance <= plugin.getConfig().getDouble("nuclear-blast.distant-sound-radius", 3000.0))
-                player.playSound(player.getLocation(), Sound.ENTITY_ELDER_GUARDIAN_CURSE, SoundCategory.MASTER, 1.0f, 0.65f);
+                player.playSound(center, "beforethefall:blast_distant", SoundCategory.MASTER, 1.0f, 1.0f);
             if (distance <= plugin.getConfig().getDouble("nuclear-blast.shock-sound-radius", 2000.0))
-                player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, SoundCategory.MASTER, 1.0f, 0.8f);
+                player.playSound(center, "beforethefall:blast_wave", SoundCategory.MASTER, 1.0f, 1.0f);
             if (distance <= plugin.getConfig().getDouble("nuclear-blast.close-sound-radius", 50.0))
-                player.playSound(player.getLocation(), Sound.ENTITY_WITHER_SPAWN, SoundCategory.MASTER, 1.0f, 0.55f);
+                player.playSound(center, "beforethefall:blast_close", SoundCategory.MASTER, 1.0f, 1.0f);
         }
     }
 
@@ -159,23 +159,24 @@ public final class NuclearBlastManager {
     }
 
     private void spawnTexturedBlast(World world, Location center, float power) {
+        // Use the actual supplied Blockbench nuclear_explosion model, not a particle placeholder.
         ItemStack sprite = new ItemStack(Material.FIREWORK_STAR);
         ItemMeta meta = sprite.getItemMeta();
-        meta.setCustomModelData(5);
+        meta.setCustomModelData(6);
         sprite.setItemMeta(meta);
         ItemDisplay display = world.spawn(center.clone().add(0, 8, 0), ItemDisplay.class);
         display.setItemStack(sprite);
         display.setBillboard(Display.Billboard.CENTER);
         display.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
-        display.setViewRange(2.0f);
-        float scale = Math.max(24f, Math.min(72f, power * 2.2f));
+        display.setViewRange(4.0f);
+        float scale = Math.max(0.65f, Math.min(1.45f, power / 18.0f));
         display.setTransformation(new Transformation(new Vector3f(), new Quaternionf(), new Vector3f(scale, scale, scale), new Quaternionf()));
         new BukkitRunnable() {
             int age = 0;
             @Override public void run() {
                 age++;
                 if (!display.isValid() || age > 100) { display.remove(); cancel(); return; }
-                float grow = scale * (1.0f + Math.min(.55f, age / 70.0f));
+                float grow = scale * (1.0f + Math.min(5.5f, age / 13.0f));
                 display.setTransformation(new Transformation(new Vector3f(), new Quaternionf(), new Vector3f(grow, grow, grow), new Quaternionf()));
                 display.setInterpolationDelay(0);
                 display.setInterpolationDuration(2);

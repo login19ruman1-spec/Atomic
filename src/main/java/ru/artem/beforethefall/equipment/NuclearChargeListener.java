@@ -5,6 +5,11 @@ import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
+import org.bukkit.entity.ItemDisplay;
+import org.bukkit.entity.Display;
+import org.bukkit.util.Transformation;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -25,6 +30,7 @@ public final class NuclearChargeListener implements Listener {
     private final BeforeTheFallPlugin plugin;
     private final NamespacedKey chargeKey;
     private final Set<String> placedCharges = new HashSet<>();
+    private final java.util.Map<String, UUID> bombDisplays = new java.util.HashMap<>();
 
     public NuclearChargeListener(BeforeTheFallPlugin plugin) {
         this.plugin = plugin;
@@ -51,12 +57,31 @@ public final class NuclearChargeListener implements Listener {
     public void onPlace(BlockPlaceEvent event) {
         if (!isChargeItem(event.getItemInHand())) return;
         placedCharges.add(key(event.getBlockPlaced()));
+        ItemStack displayItem = event.getItemInHand().clone();
+        displayItem.setAmount(1);
+        ItemDisplay display = event.getBlockPlaced().getWorld().spawn(
+                event.getBlockPlaced().getLocation().add(0.5, 0.15, 0.5), ItemDisplay.class);
+        display.setItemStack(displayItem);
+        display.setBillboard(Display.Billboard.FIXED);
+        display.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
+        display.setTransformation(new Transformation(new Vector3f(), new Quaternionf(),
+                new Vector3f(0.72f, 0.72f, 0.72f), new Quaternionf()));
+        display.setViewRange(1.5f);
+        bombDisplays.put(key(event.getBlockPlaced()), display.getUniqueId());
         save();
         event.getPlayer().sendMessage(ChatColor.RED + "☢ Заряд установлен. Подожги его огнивом или подай редстоун-сигнал.");
     }
     @EventHandler
     public void onBreak(BlockBreakEvent event) {
-        if (placedCharges.remove(key(event.getBlock()))) save();
+        String id = key(event.getBlock());
+        if (placedCharges.remove(id)) save();
+        removeDisplay(id);
+    }
+    private void removeDisplay(String id) {
+        UUID uuid = bombDisplays.remove(id);
+        if (uuid == null) return;
+        var entity = plugin.getServer().getEntity(uuid);
+        if (entity != null) entity.remove();
     }
     @EventHandler
     public void onIgnite(PlayerInteractEvent event) {
@@ -82,7 +107,9 @@ public final class NuclearChargeListener implements Listener {
     }
     private void trigger(Block block) {
         if (!isPlacedCharge(block)) return;
-        placedCharges.remove(key(block));
+        String id = key(block);
+        placedCharges.remove(id);
+        removeDisplay(id);
         save();
         var location = block.getLocation().add(.5, .5, .5);
         block.setType(Material.AIR, false);

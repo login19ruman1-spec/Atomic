@@ -27,7 +27,7 @@ tasks.register('generateAtomicResourcePack') {
   writeText('assets/minecraft/models/item/leather_helmet.json','{"parent":"minecraft:item/generated","textures":{"layer0":"minecraft:item/leather_helmet"},"overrides":[{"predicate":{"custom_model_data":21},"model":"beforethefall:item/atomic_gas_mask"}]}')
   writeText('assets/minecraft/models/item/paper.json','{"parent":"minecraft:item/generated","textures":{"layer0":"minecraft:item/paper"},"overrides":[{"predicate":{"custom_model_data":20},"model":"beforethefall:item/atomic_filter"}]}')
   writeText('assets/minecraft/models/item/tnt.json','{"parent":"minecraft:item/generated","textures":{"layer0":"minecraft:item/tnt"},"overrides":[{"predicate":{"custom_model_data":3},"model":"beforethefall:item/atomic_blast"}]}')
-  writeText('assets/minecraft/models/item/firework_star.json','{"parent":"minecraft:item/generated","textures":{"layer0":"minecraft:item/firework_star"},"overrides":[{"predicate":{"custom_model_data":5},"model":"beforethefall:item/nuclear_explosion"}]}')
+  writeText('assets/minecraft/models/item/firework_star.json','{"parent":"minecraft:item/generated","textures":{"layer0":"minecraft:item/firework_star"},"overrides":[{"predicate":{"custom_model_data":6},"model":"beforethefall:item/nuclear_explosion"}]}')
   // Export user-supplied Blockbench free/item models and their embedded textures.
   def bbDir=new File(projectDir,'src/main/resources/blockbench')
   if(bbDir.exists()) {
