@@ -53,7 +53,7 @@ public final class AftermathManager implements Listener {
     }
 
     private void scheduleChunk(BlastSite site, World world, int chunkX, int chunkZ) {
-        String id = site.id + ":" + chunkX + ":" + chunkZ;
+        String id = site.world + ":" + Double.doubleToLongBits(site.x) + ":" + Double.doubleToLongBits(site.z) + ":" + chunkX + ":" + chunkZ;
         if (!scheduledChunks.add(id)) return;
         Queue<Column> columns = new ArrayDeque<>();
         for (int x = 0; x < 16; x++) for (int z = 0; z < 16; z++) {
@@ -143,7 +143,5 @@ public final class AftermathManager implements Listener {
     }
 
     private record Column(int x, int z) { }
-    private record BlastSite(UUID id, double x, double z, double radius) {
-        private BlastSite(UUID world, double x, double z, double radius) { this(world, x, z, radius); }
-    }
+    private record BlastSite(UUID world, double x, double z, double radius) { }
 }
