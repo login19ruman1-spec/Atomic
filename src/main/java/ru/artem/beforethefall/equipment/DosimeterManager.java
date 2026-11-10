@@ -69,7 +69,7 @@ public final class DosimeterManager implements Listener {
                 + String.format(Locale.US, "%.2f", ambient) + ChatColor.DARK_GRAY + " усл. ед.  " + levelColor + danger);
         player.sendMessage(ChatColor.GRAY + "Накопленная доза: " + ChatColor.YELLOW
                 + String.format(Locale.US, "%.1f", dose) + ChatColor.GRAY + " / 100");
-        player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, SoundCategory.PLAYERS, 0.55f, 1.65f);
+        player.playSound(player.getLocation(), "beforethefall:dosimeter_measure", SoundCategory.PLAYERS, 0.75f, 1.0f);
         event.setCancelled(true);
     }
 }
