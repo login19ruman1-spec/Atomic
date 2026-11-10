@@ -27,7 +27,49 @@ tasks.register('generateAtomicResourcePack') {
   writeText('assets/minecraft/models/item/leather_helmet.json','{"parent":"minecraft:item/generated","textures":{"layer0":"minecraft:item/leather_helmet"},"overrides":[{"predicate":{"custom_model_data":21},"model":"beforethefall:item/atomic_gas_mask"}]}')
   writeText('assets/minecraft/models/item/paper.json','{"parent":"minecraft:item/generated","textures":{"layer0":"minecraft:item/paper"},"overrides":[{"predicate":{"custom_model_data":20},"model":"beforethefall:item/atomic_filter"}]}')
   writeText('assets/minecraft/models/item/tnt.json','{"parent":"minecraft:item/generated","textures":{"layer0":"minecraft:item/tnt"},"overrides":[{"predicate":{"custom_model_data":3},"model":"beforethefall:item/atomic_blast"}]}')
-  writeText('assets/minecraft/models/item/firework_star.json','{"parent":"minecraft:item/generated","textures":{"layer0":"minecraft:item/firework_star"},"overrides":[{"predicate":{"custom_model_data":5},"model":"beforethefall:item/atomic_blast"}]}')
+  writeText('assets/minecraft/models/item/firework_star.json','{"parent":"minecraft:item/generated","textures":{"layer0":"minecraft:item/firework_star"},"overrides":[{"predicate":{"custom_model_data":5},"model":"beforethefall:item/nuclear_explosion"}]}')
+  // Export user-supplied Blockbench free/item models and their embedded textures.
+  def bbDir=new File(projectDir,'src/main/resources/blockbench')
+  if(bbDir.exists()) {
+   bbDir.listFiles({f->f.name.endsWith('.bbmodel') } as java.io.FileFilter).each { bb ->
+    def data=new groovy.json.JsonSlurper().parse(bb)
+    def modelName=data.name.toString()
+    def texture=data.textures.find { it.source instanceof String && it.source.startsWith('data:image/') }
+    if(texture==null) throw new GradleException("Blockbench texture missing in ${bb.name}")
+    def encoded=texture.source.substring(texture.source.indexOf(',')+1)
+    def textureFile=new File(root,"assets/beforethefall/textures/item/${modelName}.png")
+    textureFile.parentFile.mkdirs(); textureFile.bytes=java.util.Base64.decoder.decode(encoded)
+    def cubes=data.elements.findAll { it.type=='cube' && it.faces }
+    def maxCoord=1.0d
+    cubes.each { cube -> (cube.from+cube.to).each { value -> maxCoord=Math.max(maxCoord,Math.abs((value as Number).doubleValue())) } }
+    def scale=Math.min(1.0d,7.8d/maxCoord)
+    def exported=[]
+    cubes.each { cube ->
+     def faces=[:]
+     cube.faces.each { side, face ->
+      if(face.texture!=null) {
+       def f=['uv':face.uv.collect { (it as Number).doubleValue() },'texture':'#0']
+       if(face.rotation) f.rotation=face.rotation
+       faces[side]=f
+      }
+     }
+     def element=['from':cube.from.collect { (it as Number).doubleValue()*scale+8.0d },
+                  'to':cube.to.collect { (it as Number).doubleValue()*scale+8.0d },'faces':faces]
+     def rot=cube.rotation ?: [0,0,0]
+     def axis=(0..2).find { Math.abs((rot[it] as Number).doubleValue())>0.0001d }
+     if(axis!=null) element.rotation=['origin':(cube.origin ?: [0,0,0]).collect { (it as Number).doubleValue()*scale+8.0d },
+       'axis':['x','y','z'][axis],'angle':(rot[axis] as Number).doubleValue(),'rescale':(cube.rescale ?: false)]
+     exported << element
+    }
+    def json=['credit':'Blockbench model supplied by the project owner','parent':'minecraft:item/generated',
+      'textures':['layer0':"beforethefall:item/${modelName}",'0':"beforethefall:item/${modelName}"],'elements':exported]
+    def modelFile=new File(root,"assets/beforethefall/models/item/${modelName}.json")
+    modelFile.parentFile.mkdirs(); modelFile.setText(groovy.json.JsonOutput.toJson(json),'UTF-8')
+   }
+  }
+  writeText('assets/minecraft/models/item/leather_helmet.json','{"parent":"minecraft:item/generated","textures":{"layer0":"minecraft:item/leather_helmet"},"overrides":[{"predicate":{"custom_model_data":21},"model":"beforethefall:item/gas_mask"},{"predicate":{"custom_model_data":22},"model":"beforethefall:item/gas_mask"},{"predicate":{"custom_model_data":23},"model":"beforethefall:item/gas_mask"},{"predicate":{"custom_model_data":24},"model":"beforethefall:item/gas_mask"}]}')
+  writeText('assets/minecraft/models/item/paper.json','{"parent":"minecraft:item/generated","textures":{"layer0":"minecraft:item/paper"},"overrides":[{"predicate":{"custom_model_data":20},"model":"beforethefall:item/gas_filter"}]}')
+  writeText('assets/minecraft/models/item/tnt.json','{"parent":"minecraft:item/generated","textures":{"layer0":"minecraft:item/tnt"},"overrides":[{"predicate":{"custom_model_data":3},"model":"beforethefall:item/nuclear_bomb"}]}')
   ant.zip(destfile:new File(root.parentFile,'resourcepack.zip'),basedir:root)
  }
 }
