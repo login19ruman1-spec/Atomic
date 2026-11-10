@@ -36,16 +36,24 @@ tasks.named('generateAtomicResourcePack') {
             nuke_blast: 'nuke/blast',
             nuke_impact: 'nuke/impact',
             nuke_fallout: 'nuke/fallout',
-            gas_mask_on: 'gas-mask/equip',
-            gas_mask_filter: 'gas-mask/filter',
-            gas_mask_breath: 'gas-mask/breath',
-            gas_mask_empty: 'gas-mask/empty'
+            blast_distant: 'blast/distant',
+            blast_wave: 'blast/wave',
+            blast_close: 'blast/close',
+            dosimeter_measure: 'dosimeter/measure'
         ]
         def soundsJson = [:]
-        ['gas_mask_on': 'equip', 'gas_mask_filter': 'filter', 'gas_mask_breath': 'breath', 'gas_mask_empty': 'empty'].each { eventName, fileName ->
-            def soundFile = new File(gasMaskSoundsDir, fileName + '.ogg')
+        ['gas_mask_on': 'gas-mask/equip', 'gas_mask_filter': 'gas-mask/filter', 'gas_mask_breath': 'gas-mask/breath', 'gas_mask_empty': 'gas-mask/empty'].each { eventName, relativePath ->
+            def soundFile = new File(gasMaskSoundsDir, relativePath + '.ogg')
             if (soundFile.exists()) {
-                soundsJson[eventName] = [sounds: [[name: 'beforethefall:gas-mask/' + fileName, stream: true]]]
+                soundsJson[eventName] = [sounds: [[name: 'beforethefall:' + relativePath, stream: true]]]
+            }
+        }
+        // New, simple upload layout: all sound categories live under gas-mask/sounds/.
+        ['blast_close': 'blast/close', 'blast_wave': 'blast/wave', 'blast_distant': 'blast/distant',
+         'dosimeter_measure': 'dosimeter/measure'].each { eventName, relativePath ->
+            def soundFile = new File(gasMaskSoundsDir, relativePath + '.ogg')
+            if (soundFile.exists()) {
+                soundsJson[eventName] = [sounds: [[name: 'beforethefall:' + relativePath, stream: true]]]
             }
         }
         soundEvents.each { eventName, soundPath ->
