@@ -7,7 +7,7 @@ Paper plugin for an atomic-disaster survival scenario. Requires Minecraft 1.21.4
 2. Put the JAR in `plugins/` and restart Paper.
 3. The plugin extracts its embedded resource pack to `plugins/BeforeTheFall/resourcepack.zip` and requests it on join. Accept the pack to see the custom gas-mask/filter icons and the first-person mask visor.
 
-The pack is generated during the Gradle build, so the ZIP inside the JAR always matches the plugin build. The mask view is currently a resource-pack overlay based on the carved-pumpkin helmet overlay; it is not a custom 3D player camera.
+The pack is generated during the Gradle build, embedded in the JAR, and published as a public GitHub Release asset so clients can download the exact matching ZIP automatically. The pack replaces the vanilla snow-layer texture with ash while retaining the native thin-layer collision and stacking behavior. The mask view is currently a resource-pack overlay based on the carved-pumpkin helmet overlay; it is not a custom 3D player camera.
 
 ## Crafting
 
@@ -54,7 +54,7 @@ Craft each piece separately using leather and yellow dye:
 `L` = leather, `Y` = yellow dye. Wear all four tagged pieces for suit protection.
 
 ## Nuclear event
-The detonation uses a flash, expanding shockwave, mushroom cloud, textured billboard, camera shake, distant sound layers and block damage. Default block damage radius is 25 blocks; edits are batched to avoid server stalls. Fallout is persistent and defaults to 400 blocks for 72 hours. Fallout dose causes staged nausea, hunger, weakness, poison and severe illness.
+The detonation uses a flash, expanding shockwave, animated eight-frame pixel-art mushroom cloud, camera shake, distant sound layers and block damage. Aftermath conversion processes already-loaded chunks in batches and also converts chunks as they are explored later. Basalt, gravel, sand, coarse dirt, stone and tuff are mixed per column with deterministic randomness to avoid large square patches. Trees, leaves and plants are removed inside the configured radius. Ashfall accumulates in 1–8 thin layers using snow-layer physics, but the resource pack displays those layers as grey ash. Default block damage radius is 25 blocks; edits are batched to avoid server stalls. Fallout is persistent and defaults to 400 blocks for 72 hours. Fallout dose causes staged nausea, hunger, weakness, poison and severe illness.
 
 The distant warning is sent to players within 3000 blocks, the shock layer within 2000 blocks and the close blast within 50 blocks. The current source uses Minecraft sound events for these layers. The three MP3 samples supplied in the conversation are visible to the build workspace but cannot be attached to the GitHub repository as binary assets through the available GitHub text-file actions; they must be converted to OGG and uploaded as pack assets before the exact recordings can be played. I have not substituted fake audio for those recordings.
 

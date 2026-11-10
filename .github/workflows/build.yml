@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -35,6 +35,15 @@ jobs:
           unzip -p "$JAR" resourcepack.zip > build/resourcepack.zip
           unzip -t build/resourcepack.zip
           unzip -l build/resourcepack.zip | grep -E 'atomic_blast.png|pumpkinblur.png|atomic_gas_mask.png|atomic_filter.png'
+      - name: Publish resource pack for automatic client download
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: resourcepack-latest
+          name: Atomic resource pack (latest)
+          prerelease: true
+          make_latest: false
+          overwrite_files: true
+          files: build/resources/main/resourcepack.zip
       - name: Upload plugin JAR
         uses: actions/upload-artifact@v4
         with:
