@@ -3,7 +3,7 @@ def atomicAssetsDir = file('src/main/resources/atomic-assets')
 
 tasks.named('generateAtomicResourcePack') {
     doLast {
-        def packRoot = generatedPackDir.get().dir('pack').asFile
+        def packRoot = layout.buildDirectory.dir('generated/atomic-resource-pack').get().dir('pack').asFile
         def copyAssetTree = { String sourcePath, String targetPath ->
             def source = new File(atomicAssetsDir, sourcePath)
             if (source.exists()) {
