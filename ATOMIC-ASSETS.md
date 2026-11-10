@@ -18,25 +18,19 @@
 
 Если модель уже экспортирована в Minecraft JSON, положи её в `atomic-assets/models/item/my_model.json`, а PNG — в `atomic-assets/textures/item/my_model.png`. В JSON укажи текстуру namespace `beforethefall:item/my_model`.
 
-## 3. Звуки взрыва
+## 3. Звуки ядерного взрыва
 
-Используй OGG Vorbis (не MP3/WAV), 44.1 или 48 kHz. Положи файлы:
+Для трёх дистанционных слоёв используются OGG Vorbis (не MP3/WAV), 44.1 или 48 kHz. Положи файлы с точными именами:
 
-- `atomic-assets/sounds/nuke/charge.ogg`
-- `atomic-assets/sounds/nuke/launch.ogg`
-- `atomic-assets/sounds/nuke/blast.ogg`
-- `atomic-assets/sounds/nuke/impact.ogg`
-- `atomic-assets/sounds/nuke/fallout.ogg`
+- `atomic-assets/sounds/blast/close.ogg` — вблизи эпицентра (до 50 блоков).
+- `atomic-assets/sounds/blast/wave.ogg` — звук ударной волны (до 2000 блоков).
+- `atomic-assets/sounds/blast/distant.ogg` — отдалённый гул (до 3000 блоков).
 
-Сборка автоматически зарегистрирует те события, для которых найдены файлы:
+Они регистрируются как `beforethefall:blast_close`, `beforethefall:blast_wave` и `beforethefall:blast_distant`. Игрок слышит только один подходящий слой по расстоянию; звук отправляется в позицию слушателя, чтобы Minecraft не заглушал его из-за обычного затухания позиционного звука на больших расстояниях.
 
-- `beforethefall:nuke_charge`
-- `beforethefall:nuke_launch`
-- `beforethefall:nuke_blast`
-- `beforethefall:nuke_impact`
-- `beforethefall:nuke_fallout`
+Подземный отдельный звук не используется и не регистрируется. Само нахождение под землёй не включает дополнительный звуковой слой.
 
-Это регистрация звуков в Resource Pack. Чтобы они реально проигрывались во время взрыва, код плагина должен вызвать соответствующие sound event ID; загрузка файлов сама по себе не добавляет вызовы воспроизведения.
+Существующие дополнительные события зарядки/запуска/падения/радиоактивных последствий можно положить в `atomic-assets/sounds/nuke/charge.ogg`, `launch.ogg`, `blast.ogg`, `impact.ogg`, `fallout.ogg` соответственно; сборка зарегистрирует их при наличии файлов.
 
 ## 4. Сборка и проверка
 
