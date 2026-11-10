@@ -1,29 +1,42 @@
-# Atomic — загрузка моделей, изображений и звуков
+# Atomic — три папки ресурсов противогаза
 
-Все пользовательские ресурсы загружай в `src/main/resources/atomic-assets/`. После `gradle clean build` они попадут в создаваемый resource pack внутри JAR.
+Загружай свои файлы в три папки внутри `src/main/resources/atomic-assets/gas-mask/`. Сборка сама добавит их в resource pack.
 
-## Папки для загрузки
+## 1. sounds — звуки (OGG Vorbis)
 
-- `atomic-assets/photos/` — PNG-картинки/фото для текстур; сохраняй подпапки, например `photos/gui/radiation_warning.png`. В паке будут доступны как `beforethefall:textures/photos/gui/radiation_warning.png`.
-- `atomic-assets/textures/` — игровые PNG-текстуры: `textures/item/`, `textures/block/`, `textures/gui/`.
-- `atomic-assets/models/` — готовые Minecraft JSON-модели, например `models/item/custom_item.json`.
-- `atomic-assets/sounds/blast/` — три звука ядерного взрыва: `close.ogg`, `wave.ogg`, `distant.ogg`.
-- `atomic-assets/sounds/nuke/` — `charge.ogg`, `launch.ogg`, `blast.ogg`, `impact.ogg`, `fallout.ogg`.
+Папка: `src/main/resources/atomic-assets/gas-mask/sounds/`
 
-Звуки должны быть OGG Vorbis. Звуковые события регистрируются автоматически, только если соответствующий файл существует. Отдельного подземного звука нет.
+- `gas-mask/equip.ogg` — надевание противогаза.
+- `gas-mask/filter.ogg` — установка фильтра.
+- `gas-mask/breath.ogg` — дыхание внутри противогаза (проигрывается примерно раз в 5 секунд).
+- `gas-mask/empty.ogg` — фильтр исчерпан.
+- `dosimeter/measure.ogg` — звук измерения дозиметра.
+- `blast/close.ogg` — близкий взрыв, до 50 блоков.
+- `blast/wave.ogg` — ударная волна, 50–2000 блоков.
+- `blast/distant.ogg` — далёкий звук, 2000–3000 блоков.
 
-## Blockbench
+Для взрыва каждому игроку проигрывается только один слой по расстоянию. Звук отправляется на позицию слушателя, поэтому его не заглушают стены/рельеф и он слышен на большой дистанции. Отдельного подземного слоя нет.
 
-Исходные `.bbmodel` клади в `src/main/resources/blockbench/`. В модели должна быть встроенная PNG-текстура. Проект автоматически экспортирует модели из этой папки. Дозиметр уже находится в `blockbench/dosimeter.bbmodel` и подключён к предмету CLOCK через CustomModelData 30.
+## 2. models — модели
+
+Папка: `src/main/resources/atomic-assets/gas-mask/models/`
+
+Твои исходники уже загружены в `src/main/resources/blockbench/`:
+- `gas_mask.bbmodel` — модель противогаза;
+- `gas_filter.bbmodel` — модель фильтра.
+
+Они автоматически экспортируются при сборке и используются предметами. Если добавляешь готовую Minecraft-модель, положи сюда JSON.
+
+## 3. textures — текстуры
+
+Папка: `src/main/resources/atomic-assets/gas-mask/textures/`
+
+Загружай сюда PNG-текстуры, в том числе текстуры внутренней части/визора. Основные текстуры из двух Blockbench-моделей уже извлекаются автоматически. Если заменяешь основную текстуру противогаза вручную, используй имя `gas_mask.png`.
 
 ## Дозиметр
 
-Команда администратора: `/bft dosimeter`. Она выдаёт предмет дозиметра. Возьми его в руку и нажми ПКМ: он покажет текущий местный радиационный фон и накопленную дозу игрока. Значения местного фона — условные игровые единицы, это шкала игрового плагина, не реальные µSv/h.
-
-## Противогазовый HUD
-
-`textures/gui/gas_mask_overlay.png` можно положить в `atomic-assets/textures/gui/`. Сам по себе чистый Paper не может включить условный HUD-оверлей на клиенте; для его показа поверх экрана понадобится клиентский мод.
+Команда: `/bft dosimeter`. ПКМ по предмету показывает местный радиационный фон и накопленную дозу. Звук измерения подключён к `sounds/dosimeter/measure.ogg`.
 
 ## Сборка
 
-Используй Java 21 и `gradle --no-daemon clean test build`. После замены текстур/звуков игрокам может потребоваться обновить или очистить кэш resource pack.
+Java 21: `gradle --no-daemon clean test build`. После замены файлов игрокам может понадобиться обновить кэш resource pack.
