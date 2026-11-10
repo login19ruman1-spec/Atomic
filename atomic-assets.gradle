@@ -1,0 +1,54 @@
+// Optional owner-supplied assets. Files placed here are merged into the generated pack.
+def atomicAssetsDir = file('src/main/resources/atomic-assets')
+
+tasks.named('generateAtomicResourcePack') {
+    doLast {
+        def packRoot = generatedPackDir.get().dir('pack').asFile
+        def copyAssetTree = { String sourcePath, String targetPath ->
+            def source = new File(atomicAssetsDir, sourcePath)
+            if (source.exists()) {
+                copy {
+                    from source
+                    into new File(packRoot, targetPath)
+                }
+            }
+        }
+
+        // Upload PNGs preserving their relative paths, e.g. textures/gui/gas_mask_overlay.png.
+        copyAssetTree('textures', 'assets/beforethefall/textures')
+        // Optional custom item/block model JSON files, preserving relative paths.
+        copyAssetTree('models', 'assets/beforethefall/models')
+
+        // Sound files are uploaded under sounds/, and exposed as stable sound event IDs.
+        def soundsDir = new File(atomicAssetsDir, 'sounds')
+        def soundEvents = [
+            nuke_charge: 'nuke/charge',
+            nuke_launch: 'nuke/launch',
+            nuke_blast: 'nuke/blast',
+            nuke_impact: 'nuke/impact',
+            nuke_fallout: 'nuke/fallout'
+        ]
+        def soundsJson = [:]
+        soundEvents.each { eventName, soundPath ->
+            def soundFile = new File(soundsDir, soundPath + '.ogg')
+            if (soundFile.exists()) {
+                soundsJson[eventName] = [sounds: [[name: "beforethefall:" + soundPath, stream: true]]]
+            }
+        }
+        if (!soundsJson.isEmpty()) {
+            def soundJsonFile = new File(packRoot, 'assets/beforethefall/sounds.json')
+            soundJsonFile.parentFile.mkdirs()
+            soundJsonFile.setText(groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(soundsJson)), 'UTF-8')
+        }
+
+        // Keep user-supplied files visible in the build log for easier troubleshooting.
+        def uploaded = []
+        ['textures', 'models', 'sounds'].each { folder ->
+            def dir = new File(atomicAssetsDir, folder)
+            if (dir.exists()) {
+                dir.eachFileRecurse { f -> if (f.isFile()) uploaded << f.toString().replace(atomicAssetsDir.toString() + File.separator, '') }
+            }
+        }
+        logger.lifecycle("Atomic custom assets copied: " + (uploaded.isEmpty() ? 'none yet' : uploaded.sort().join(', ')))
+    }
+}
