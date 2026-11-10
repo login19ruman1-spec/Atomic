@@ -5,13 +5,15 @@ Paper plugin for an atomic-disaster survival scenario. Requires Minecraft 1.21.4
 ## Install
 1. Download the latest successful [GitHub Actions artifact](https://github.com/login19ruman1-spec/Atomic/actions).
 2. Put the JAR in `plugins/` and restart Paper.
-3. The plugin extracts its embedded resource pack to `plugins/BeforeTheFall/resourcepack.zip` and requests it on join. Accept the pack to see the custom gas-mask/filter icons and the first-person mask visor.
+3. The plugin extracts its embedded resource pack and requests it on join. Accept it to see the separate gas-mask and filter icons.
 
-The pack is generated during the Gradle build, embedded in the JAR, and published as a public GitHub Release asset so clients can download the exact matching ZIP automatically. The pack currently skins the vanilla snow-layer block as ash while retaining native thin-layer collision and stacking behavior. This is a deliberate visual trade-off: Paper cannot register a truly separate custom thin-layer block with snow collision without a client mod or a more invasive block-state workaround; vanilla snow layers will therefore share the ash texture while this pack is active. The mask view is currently a resource-pack overlay based on the carved-pumpkin helmet overlay; it is not a custom 3D player camera.
+The pack skins vanilla snow layers as ash while retaining their thin-layer collision and stacking. Vanilla snow layers share the ash texture while the pack is active. Paper cannot register a genuinely separate custom thin-layer block with snow physics without a client mod or block-state workaround.
+
+The gas mask is a plugin-tagged leather helmet with its own resource-pack model, not a carved pumpkin. This removes the pumpkin vignette and avoids covering the screen with the pumpkin overlay. A custom first-person visor overlay that activates only when this helmet is worn requires a client-side mod; a server resource pack cannot conditionally change the camera overlay.
 
 ## Crafting
 
-All recipes require a 3×3 crafting table. These outputs are plugin-tagged: vanilla lookalike items from Creative/commands do not work as replacements.
+All recipes require a 3×3 crafting table. Crafted outputs are tagged custom items; ordinary lookalike items from Creative or commands are not accepted.
 
 ### Gas mask
 ```
@@ -19,7 +21,7 @@ Leather     Glass Pane  Leather
 Iron Ingot  Iron Bars   Iron Ingot
 -           Leather    -
 ```
-Wear it in the helmet slot.
+Wear in the helmet slot.
 
 ### Replacement filter
 ```
@@ -27,7 +29,7 @@ Paper       Charcoal    Paper
 Redstone    Iron Ingot  Redstone
 Paper       Charcoal    Paper
 ```
-Wear the mask and right-click while holding the crafted filter. One filter restores 15 minutes by default. The filter is a separate paper-based custom item with its own icon and persistent plugin marker; a normal iron ingot or paper cannot replace it.
+An alternate recipe accepts an iron nugget in the centre. Wear the mask and right-click while holding the crafted filter. One cartridge lasts 15 minutes by default.
 
 ### Nuclear charge
 ```
@@ -35,7 +37,7 @@ Gold Ingot    Redstone Block  Gold Ingot
 TNT           Clock           TNT
 Gold Ingot    Redstone Block  Gold Ingot
 ```
-Place the crafted TNT block, then ignite it with flint and steel/fire charge or redstone. Ordinary TNT does not trigger a nuclear detonation.
+Place the crafted TNT block and ignite it with flint and steel/fire charge or redstone. Ordinary TNT does not trigger a nuclear detonation.
 
 ### Bunker core (lodestone)
 ```
@@ -43,7 +45,7 @@ Obsidian    Iron Block      Obsidian
 Iron Block  Redstone Block  Iron Block
 Obsidian    Iron Block      Obsidian
 ```
-Only the crafted/tagged lodestone activates a bunker; vanilla lodestone from Creative does not.
+Only the crafted/tagged lodestone activates a bunker.
 
 ### Yellow radiation suit
 Craft each piece separately using leather and yellow dye:
@@ -51,12 +53,6 @@ Craft each piece separately using leather and yellow dye:
 - Chestplate: `L - L / LYL / L - L`
 - Leggings: `LYL / L - L / L - L`
 - Boots: `- - - / L - L / L - L`
-`L` = leather, `Y` = yellow dye. Wear all four tagged pieces for suit protection.
-
-## Nuclear event
-The detonation uses a flash, expanding shockwave, animated eight-frame pixel-art mushroom cloud, camera shake, distant sound layers and block damage. Aftermath conversion processes already-loaded chunks in batches and also converts chunks as they are explored later. Basalt, gravel, sand and coarse dirt are mixed per column with deterministic randomness to avoid large square patches. Surface ice is broken/melted rather than converted into soil; water is left as water. Ordinary snow remains vanilla. Trees, leaves and plants are removed inside the configured radius. Ashfall accumulates in 1–8 thin layers using snow-layer physics, but the resource pack displays those layers as grey ash. Default block damage radius is 25 blocks; edits are batched to avoid server stalls. Fallout is persistent and defaults to 400 blocks for 72 hours. Fallout dose causes staged nausea, hunger, weakness, poison and severe illness.
-
-The distant warning is sent to players within 3000 blocks, the shock layer within 2000 blocks and the close blast within 50 blocks. The current source uses Minecraft sound events for these layers. The three MP3 samples supplied in the conversation are visible to the build workspace but cannot be attached to the GitHub repository as binary assets through the available GitHub text-file actions; they must be converted to OGG and uploaded as pack assets before the exact recordings can be played. I have not substituted fake audio for those recordings.
 
 ## Commands
 - `/bft status` — personal radiation and filter status.
@@ -70,4 +66,4 @@ The distant warning is sent to players within 3000 blocks, the shock layer withi
 ```bash
 gradle --no-daemon clean test build
 ```
-CI verifies the plugin descriptor and embedded resource pack, then uploads the JAR as a 30-day Actions artifact. This is a native Paper implementation, not a binary conversion of the Forge mod; original All Rights Reserved mod assets are not redistributed.
+CI verifies the plugin descriptor and embedded resource pack, then uploads the JAR as a 30-day Actions artifact. This is a native Paper implementation, not a binary conversion of the Forge mod; original All Rights Reserved assets are not redistributed.

@@ -1,125 +1,35 @@
 plugins { id 'java' }
 group = 'ru.artem.beforethefall'
-version = '0.2.1-atomic'
+version = '0.2.2-atomic'
 repositories { mavenCentral(); maven { url = 'https://repo.papermc.io/repository/maven-public/' } }
 dependencies { compileOnly 'io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT'; testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4' }
 java { toolchain { languageVersion = JavaLanguageVersion.of(21) } }
 tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8'; options.release = 21 }
 test { useJUnitPlatform() }
 jar { archiveBaseName = 'BeforeTheFall-Paper'; archiveVersion = project.version }
-
 def generatedPackDir = layout.buildDirectory.dir('generated/atomic-resource-pack')
 sourceSets.main.resources.srcDir(generatedPackDir)
-
 tasks.register('generateAtomicResourcePack') {
-    outputs.dir(generatedPackDir)
-    doLast {
-        def root = generatedPackDir.get().dir('pack').asFile
-        root.mkdirs()
-        def writeText = { String path, String value ->
-            def f = new File(root, path); f.parentFile.mkdirs(); f.setText(value, 'UTF-8')
-        }
-        def png = { String path, int w, int h, Closure paint ->
-            def f = new File(root, path); f.parentFile.mkdirs()
-            def image = new java.awt.image.BufferedImage(w, h, java.awt.image.BufferedImage.TYPE_INT_ARGB)
-            def g = image.createGraphics()
-            g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_OFF)
-            paint.call(g, image)
-            g.dispose()
-            javax.imageio.ImageIO.write(image, 'png', f)
-        }
-        writeText('pack.mcmeta', '{"pack":{"pack_format":46,"description":"BeforeTheFall Atomic Survival — gas mask, filters and nuclear blast"}}')
-        // Minecraft's carved-pumpkin first-person overlay: transparent breathing window with tinted glass and mask frame.
-        png('assets/minecraft/textures/misc/pumpkinblur.png', 256, 256) { g, im ->
-            g.setColor(new java.awt.Color(12, 18, 17, 205)); g.fillRect(0,0,256,256)
-            g.setComposite(java.awt.AlphaComposite.Clear); g.fillRoundRect(28,55,200,145,18,18)
-            g.setComposite(java.awt.AlphaComposite.SrcOver)
-            g.setColor(new java.awt.Color(20,42,42,115)); g.fillRoundRect(36,62,184,130,14,14)
-            g.setColor(new java.awt.Color(115,190,183,125)); g.drawRoundRect(36,62,184,130,14,14)
-            g.setColor(new java.awt.Color(185,225,220,65)); g.fillRect(43,68,3,116); g.fillRect(210,68,3,116)
-            g.setColor(new java.awt.Color(8,12,12,220)); g.fillRoundRect(116,85,24,78,7,7)
-            g.setColor(new java.awt.Color(45,55,54,230)); g.fillRoundRect(95,174,66,44,12,12)
-            g.setColor(new java.awt.Color(150,175,168,220)); g.drawRoundRect(95,174,66,44,12,12)
-            g.setColor(new java.awt.Color(12,18,17,240)); g.fillRect(0,0,256,25); g.fillRect(0,231,256,25)
-        }
-        // Small pixel-art inventory icons.
-        png('assets/beforethefall/textures/item/atomic_gas_mask.png',16,16) { g, im ->
-            g.setColor(new java.awt.Color(35,43,39)); g.fillRoundRect(1,3,14,11,3,3)
-            g.setColor(new java.awt.Color(90,105,92)); g.fillRect(2,4,12,7)
-            g.setColor(new java.awt.Color(105,190,190)); g.fillRect(3,5,4,4); g.fillRect(9,5,4,4)
-            g.setColor(new java.awt.Color(15,25,24)); g.fillRect(7,5,2,5)
-            g.setColor(new java.awt.Color(160,170,150)); g.fillRect(6,11,4,3)
-        }
-        png('assets/beforethefall/textures/item/atomic_filter.png',16,16) { g, im ->
-            g.setColor(new java.awt.Color(45,50,45)); g.fillRect(3,1,10,14)
-            g.setColor(new java.awt.Color(125,135,115)); g.fillRect(4,2,8,12)
-            g.setColor(new java.awt.Color(35,45,38)); g.fillRect(5,4,6,7)
-            g.setColor(new java.awt.Color(170,180,150)); g.fillRect(6,5,4,1); g.fillRect(6,8,4,1)
-            g.setColor(new java.awt.Color(90,100,85)); g.fillRect(2,3,1,10); g.fillRect(13,3,1,10)
-        }
-        png('assets/beforethefall/textures/item/atomic_blast.png',32,32) { g, im ->
-            g.setColor(new java.awt.Color(255,245,170)); g.fillOval(11,10,10,13)
-            g.setColor(new java.awt.Color(255,190,55)); g.fillOval(6,5,20,20)
-            g.setColor(new java.awt.Color(205,75,25)); g.fillOval(2,2,28,19)
-            g.setColor(new java.awt.Color(115,65,50)); g.fillOval(4,0,9,9); g.fillOval(18,1,11,9); g.fillOval(11,0,10,7)
-            g.setColor(new java.awt.Color(255,220,90)); g.fillRect(14,17,4,13)
-        }
-        // Pixel-art radioactive ash: same thin-layer collision/stacking as snow, visually replaced in the pack.
-        png('assets/minecraft/textures/block/snow.png',16,16) { g, im ->
-            def rng = new java.util.Random(712367L)
-            for (int y=0; y<16; y++) for (int x=0; x<16; x++) {
-                int n = rng.nextInt(5)
-                int base = 75 + n * 8
-                g.setColor(new java.awt.Color(base, base + 2, base + 3, 255))
-                g.fillRect(x,y,1,1)
-            }
-            g.setColor(new java.awt.Color(38,42,43)); g.fillRect(2,3,2,1); g.fillRect(10,8,3,1); g.fillRect(5,13,2,1)
-            g.setColor(new java.awt.Color(145,148,145)); g.fillRect(6,2,2,1); g.fillRect(13,12,2,1); g.fillRect(1,10,1,2)
-        }
-        // Eight-frame animated mushroom-cloud billboard; frames are stacked vertically for Minecraft animation.
-        def blastFile = new File(root, 'assets/beforethefall/textures/item/atomic_blast.png')
-        blastFile.parentFile.mkdirs()
-        def sheet = new java.awt.image.BufferedImage(128, 128 * 8, java.awt.image.BufferedImage.TYPE_INT_ARGB)
-        for (int frame=0; frame<8; frame++) {
-            def g = sheet.createGraphics()
-            g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_OFF)
-            g.translate(0, frame * 128)
-            int pulse = frame % 4
-            // Ground flash and long lateral shock front.
-            g.setColor(new java.awt.Color(255, 105, 20, 170)); g.fillOval(5, 91-pulse, 118, 22+pulse)
-            g.setColor(new java.awt.Color(255, 205, 45, 230)); g.fillOval(14, 96-pulse, 100, 10+pulse)
-            // Hot rising stem.
-            g.setColor(new java.awt.Color(255, 90, 15)); g.fillPolygon(new int[]{48,57,71,82}, new int[]{111,54,54,111}, 4)
-            g.setColor(new java.awt.Color(255, 190, 35)); g.fillPolygon(new int[]{54,61,68,76}, new int[]{108,57,57,108}, 4)
-            g.setColor(new java.awt.Color(255, 245, 170)); g.fillRect(61,61,7,44)
-            // Mushroom cap silhouette with irregular rolling lobes.
-            g.setColor(new java.awt.Color(112, 57, 39))
-            g.fillOval(15,31-pulse,98,48+pulse); g.fillOval(22,17-pulse,32,35); g.fillOval(45,8-pulse,38,42); g.fillOval(76,18-pulse,30,34)
-            g.setColor(new java.awt.Color(190, 83, 34))
-            g.fillOval(19,29-pulse,90,39+pulse); g.fillOval(30,18-pulse,27,27); g.fillOval(52,12-pulse,29,32); g.fillOval(78,21-pulse,24,26)
-            g.setColor(new java.awt.Color(255, 137, 28))
-            g.fillOval(27,37-pulse,74,25+pulse); g.fillOval(39,27-pulse,23,22); g.fillOval(63,23-pulse,23,25)
-            g.setColor(new java.awt.Color(255, 207, 57))
-            g.fillOval(42,43-pulse,45,15+pulse); g.fillOval(54,34-pulse,19,17)
-            g.setColor(new java.awt.Color(255, 247, 174)); g.fillOval(57,46-pulse,14,10+pulse)
-            // Flickering debris and fire tongues.
-            g.setColor(new java.awt.Color(255, 180, 45))
-            for (int i=0;i<10;i++) { int x=(i*29+frame*7)%120+4; int y=75+(i*13+frame*3)%34; g.fillRect(x,y,2,5); }
-            g.dispose()
-        }
-        javax.imageio.ImageIO.write(sheet, 'png', blastFile)
-        writeText('assets/beforethefall/textures/item/atomic_blast.png.mcmeta',
-            '{"animation":{"frametime":3,"interpolate":true,"frames":[0,1,2,3,4,5,6,7]}}')
-        def itemModel = { String item, String texture ->
-            writeText("assets/minecraft/models/item/${item}.json", """{"parent":"minecraft:item/generated","textures":{"layer0":"beforethefall:item/${texture}"},"overrides":[{"predicate":{"custom_model_data":${item=='carved_pumpkin'?21:item=='paper'?20:item=='tnt'?3:item=='lodestone'?4:5}},"model":"beforethefall:item/${texture}"}]}""")
-        }
-        ['atomic_gas_mask':'atomic_gas_mask','atomic_filter':'atomic_filter','atomic_blast':'atomic_blast'].each { k,v ->
-            writeText("assets/beforethefall/models/item/${k}.json", """{"parent":"minecraft:item/generated","textures":{"layer0":"beforethefall:item/${v}"}}""")
-        }
-        itemModel('carved_pumpkin','atomic_gas_mask'); itemModel('paper','atomic_filter'); itemModel('tnt','atomic_blast')
-        // The nuclear billboard uses a custom model-data firework star.
-        writeText('assets/minecraft/models/item/firework_star.json', '{"parent":"minecraft:item/generated","textures":{"layer0":"minecraft:item/firework_star"},"overrides":[{"predicate":{"custom_model_data":5},"model":"beforethefall:item/atomic_blast"}]}')
-        ant.zip(destfile: new File(root.parentFile, 'resourcepack.zip'), basedir: root)
-    }
+ outputs.dir(generatedPackDir)
+ doLast {
+  def root=generatedPackDir.get().dir('pack').asFile;root.mkdirs()
+  def writeText={String path,String value->def f=new File(root,path);f.parentFile.mkdirs();f.setText(value,'UTF-8')}
+  def png={String path,int w,int h,Closure paint->def f=new File(root,path);f.parentFile.mkdirs();def im=new java.awt.image.BufferedImage(w,h,java.awt.image.BufferedImage.TYPE_INT_ARGB);def g=im.createGraphics();g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,java.awt.RenderingHints.VALUE_ANTIALIAS_OFF);paint.call(g,im);g.dispose();javax.imageio.ImageIO.write(im,'png',f)}
+  writeText('pack.mcmeta','{"pack":{"pack_format":46,"description":"BeforeTheFall Atomic Survival — gas mask and filter"}}')
+  png('assets/beforethefall/textures/item/atomic_gas_mask.png',16,16){g,im->g.setColor(new java.awt.Color(35,43,39));g.fillRoundRect(1,2,14,12,3,3);g.setColor(new java.awt.Color(80,100,88));g.fillRect(2,3,12,7);g.setColor(new java.awt.Color(115,190,185));g.fillRect(3,4,4,4);g.fillRect(9,4,4,4);g.setColor(new java.awt.Color(15,25,24));g.fillRect(7,4,2,5);g.setColor(new java.awt.Color(145,155,135));g.fillRect(5,10,6,3)}
+  png('assets/beforethefall/textures/item/atomic_filter.png',16,16){g,im->g.setColor(new java.awt.Color(45,50,45));g.fillRect(3,1,10,14);g.setColor(new java.awt.Color(125,135,115));g.fillRect(4,2,8,12);g.setColor(new java.awt.Color(35,45,38));g.fillRect(5,4,6,7);g.setColor(new java.awt.Color(170,180,150));g.fillRect(6,5,4,1);g.fillRect(6,8,4,1);g.setColor(new java.awt.Color(90,100,85));g.fillRect(2,3,1,10);g.fillRect(13,3,1,10)}
+  png('assets/minecraft/textures/item/leather_helmet.png',16,16){g,im->g.setColor(new java.awt.Color(42,52,47));g.fillRect(2,4,12,8);g.fillRect(4,2,8,3);g.fillRect(1,7,2,5);g.fillRect(13,7,2,5);g.setColor(new java.awt.Color(115,190,185));g.fillRect(4,5,3,3);g.fillRect(9,5,3,3);g.setColor(new java.awt.Color(18,25,22));g.fillRect(7,5,2,5);g.setColor(new java.awt.Color(145,155,135));g.fillRect(6,10,4,3)}
+  png('assets/beforethefall/textures/item/atomic_blast.png',32,32){g,im->g.setColor(new java.awt.Color(255,245,170));g.fillOval(11,10,10,13);g.setColor(new java.awt.Color(255,190,55));g.fillOval(6,5,20,20);g.setColor(new java.awt.Color(205,75,25));g.fillOval(2,2,28,19);g.setColor(new java.awt.Color(115,65,50));g.fillOval(4,0,9,9);g.fillOval(18,1,11,9);g.fillOval(11,0,10,7);g.setColor(new java.awt.Color(255,220,90));g.fillRect(14,17,4,13)}
+  png('assets/minecraft/textures/block/snow.png',16,16){g,im->def rng=new java.util.Random(712367L);for(int y=0;y<16;y++)for(int x=0;x<16;x++){int n=rng.nextInt(5);int base=75+n*8;g.setColor(new java.awt.Color(base,base+2,base+3,255));g.fillRect(x,y,1,1)};g.setColor(new java.awt.Color(38,42,43));g.fillRect(2,3,2,1);g.fillRect(10,8,3,1);g.fillRect(5,13,2,1);g.setColor(new java.awt.Color(145,148,145));g.fillRect(6,2,2,1);g.fillRect(13,12,2,1);g.fillRect(1,10,1,2)}
+  def blastFile=new File(root,'assets/beforethefall/textures/item/atomic_blast.png');blastFile.parentFile.mkdirs();def sheet=new java.awt.image.BufferedImage(128,1024,java.awt.image.BufferedImage.TYPE_INT_ARGB)
+  for(int frame=0;frame<8;frame++){def g=sheet.createGraphics();g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,java.awt.RenderingHints.VALUE_ANTIALIAS_OFF);g.translate(0,frame*128);int pulse=frame%4;g.setColor(new java.awt.Color(255,105,20,170));g.fillOval(5,91-pulse,118,22+pulse);g.setColor(new java.awt.Color(255,205,45,230));g.fillOval(14,96-pulse,100,10+pulse);g.setColor(new java.awt.Color(255,90,15));g.fillPolygon(new int[]{48,57,71,82},new int[]{111,54,54,111},4);g.setColor(new java.awt.Color(255,190,35));g.fillPolygon(new int[]{54,61,68,76},new int[]{108,57,57,108},4);g.setColor(new java.awt.Color(255,245,170));g.fillRect(61,61,7,44);g.setColor(new java.awt.Color(112,57,39));g.fillOval(15,31-pulse,98,48+pulse);g.fillOval(22,17-pulse,32,35);g.fillOval(45,8-pulse,38,42);g.fillOval(76,18-pulse,30,34);g.setColor(new java.awt.Color(190,83,34));g.fillOval(19,29-pulse,90,39+pulse);g.fillOval(30,18-pulse,27,27);g.fillOval(52,12-pulse,29,32);g.fillOval(78,21-pulse,24,26);g.setColor(new java.awt.Color(255,137,28));g.fillOval(27,37-pulse,74,25+pulse);g.fillOval(39,27-pulse,23,22);g.fillOval(63,23-pulse,23,25);g.setColor(new java.awt.Color(255,207,57));g.fillOval(42,43-pulse,45,15+pulse);g.fillOval(54,34-pulse,19,17);g.setColor(new java.awt.Color(255,247,174));g.fillOval(57,46-pulse,14,10+pulse);g.dispose()}
+  javax.imageio.ImageIO.write(sheet,'png',blastFile);writeText('assets/beforethefall/textures/item/atomic_blast.png.mcmeta','{"animation":{"frametime":3,"interpolate":true,"frames":[0,1,2,3,4,5,6,7]}}')
+  writeText('assets/beforethefall/models/item/atomic_gas_mask.json','{"parent":"minecraft:item/generated","textures":{"layer0":"beforethefall:item/atomic_gas_mask"}}');writeText('assets/beforethefall/models/item/atomic_filter.json','{"parent":"minecraft:item/generated","textures":{"layer0":"beforethefall:item/atomic_filter"}}');writeText('assets/beforethefall/models/item/atomic_blast.json','{"parent":"minecraft:item/generated","textures":{"layer0":"beforethefall:item/atomic_blast"}}')
+  writeText('assets/minecraft/models/item/leather_helmet.json','{"parent":"minecraft:item/generated","textures":{"layer0":"minecraft:item/leather_helmet"},"overrides":[{"predicate":{"custom_model_data":21},"model":"beforethefall:item/atomic_gas_mask"}]}')
+  writeText('assets/minecraft/models/item/paper.json','{"parent":"minecraft:item/generated","textures":{"layer0":"minecraft:item/paper"},"overrides":[{"predicate":{"custom_model_data":20},"model":"beforethefall:item/atomic_filter"}]}')
+  writeText('assets/minecraft/models/item/tnt.json','{"parent":"minecraft:item/generated","textures":{"layer0":"minecraft:item/tnt"},"overrides":[{"predicate":{"custom_model_data":3},"model":"beforethefall:item/atomic_blast"}]}')
+  writeText('assets/minecraft/models/item/firework_star.json','{"parent":"minecraft:item/generated","textures":{"layer0":"minecraft:item/firework_star"},"overrides":[{"predicate":{"custom_model_data":5},"model":"beforethefall:item/atomic_blast"}]}')
+  ant.zip(destfile:new File(root.parentFile,'resourcepack.zip'),basedir:root)
+ }
 }
 processResources.dependsOn tasks.named('generateAtomicResourcePack')
