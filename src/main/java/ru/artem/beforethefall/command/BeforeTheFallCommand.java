@@ -43,6 +43,7 @@ public final class BeforeTheFallCommand implements CommandExecutor, TabCompleter
             boolean maskOn = plugin.getGasMaskManager().isProtected(player);
             sender.sendMessage(color("&7Противогаз: " + (maskOn ? "&aзащищает" : "&cне защищает (надень маску / проверь фильтр)")));
             sender.sendMessage(color("&7Фильтр: &e" + plugin.getGasMaskManager().remainingSeconds(player.getInventory().getHelmet()) + " сек."));
+            sender.sendMessage(color("&7Прочность противогаза: &e" + plugin.getGasMaskManager().remainingDurability(player.getInventory().getHelmet()) + "%"));
             sender.sendMessage(color("&7Бункер: " + (plugin.getBunkerManager().isProtected(player.getLocation()) ? "&aзащищает" : "&cвне зоны защиты")));
             return true;
         }
