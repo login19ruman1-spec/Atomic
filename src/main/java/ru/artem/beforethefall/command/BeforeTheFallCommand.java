@@ -62,6 +62,11 @@ public final class BeforeTheFallCommand implements CommandExecutor, TabCompleter
             return true;
         }
         switch (args[0].toLowerCase(Locale.ROOT)) {
+            case "dosimeter" -> {
+                if (!(sender instanceof Player player)) { sender.sendMessage(color("&cКоманда доступна только игроку.")); return true; }
+                player.getInventory().addItem(plugin.getDosimeterManager().createDosimeter()).values().forEach(item -> player.getWorld().dropItemNaturally(player.getLocation(), item));
+                player.sendMessage(color("&aДозиметр выдан. Возьми его в руку и нажми ПКМ для измерения фона."));
+            }
             case "ashstorm" -> {
                 boolean enable = args.length < 2 ? !ash.isActive() : args[1].equalsIgnoreCase("on");
                 ash.setActive(enable);
@@ -103,7 +108,7 @@ public final class BeforeTheFallCommand implements CommandExecutor, TabCompleter
                 sender.sendMessage(color("&aКонфигурация BeforeTheFall перезагружена."));
             }
             case "zone" -> sender.sendMessage(color("&eЗоны радиации задаются в config.yml: radiation.zones."));
-            default -> sender.sendMessage(color("&eКоманды: /bft status, /bft menu, /bft gasmask, /bft filter, /bft ashstorm [on|off], /bft nuke [мощность], /bft radiation <игрок> <0-100>, /bft zone, /bft reload"));
+            default -> sender.sendMessage(color("&eКоманды: /bft status, /bft menu, /bft gasmask, /bft filter, /bft dosimeter, /bft ashstorm [on|off], /bft nuke [мощность], /bft radiation <игрок> <0-100>, /bft zone, /bft reload"));
         }
         return true;
     }
@@ -112,7 +117,7 @@ public final class BeforeTheFallCommand implements CommandExecutor, TabCompleter
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         List<String> result = new ArrayList<>();
         if (args.length == 1) {
-            for (String option : List.of("status", "menu", "gasmask", "filter", "ashstorm", "nuke", "radiation", "zone", "reload")) {
+            for (String option : List.of("status", "menu", "gasmask", "filter", "dosimeter", "ashstorm", "nuke", "radiation", "zone", "reload")) {
                 if (option.startsWith(args[0].toLowerCase(Locale.ROOT))) result.add(option);
             }
         } else if (args.length == 2 && args[0].equalsIgnoreCase("ashstorm")) {
