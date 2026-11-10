@@ -16,6 +16,8 @@ tasks.named('generateAtomicResourcePack') {
 
         // Upload PNGs preserving their relative paths, e.g. textures/gui/gas_mask_overlay.png.
         copyAssetTree('textures', 'assets/beforethefall/textures')
+        // Convenience folder for uploaded reference/gameplay photos; packaged as textures/photos/.
+        copyAssetTree('photos', 'assets/beforethefall/textures/photos')
         // Optional custom item/block model JSON files, preserving relative paths.
         copyAssetTree('models', 'assets/beforethefall/models')
 
@@ -44,9 +46,18 @@ tasks.named('generateAtomicResourcePack') {
             soundJsonFile.setText(groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(soundsJson)), 'UTF-8')
         }
 
+        // The Blockbench dosimeter is exported by build.gradle; bind it to a clock item.
+        def clockModel = new File(packRoot, 'assets/minecraft/models/item/clock.json')
+        clockModel.parentFile.mkdirs()
+        clockModel.setText(groovy.json.JsonOutput.toJson([
+            parent: 'minecraft:item/generated',
+            textures: [layer0: 'minecraft:item/clock'],
+            overrides: [[predicate: [custom_model_data: 30], model: 'beforethefall:item/dosimeter']]
+        ]), 'UTF-8')
+
         // Keep user-supplied files visible in the build log for easier troubleshooting.
         def uploaded = []
-        ['textures', 'models', 'sounds'].each { folder ->
+        ['textures', 'photos', 'models', 'sounds'].each { folder ->
             def dir = new File(atomicAssetsDir, folder)
             if (dir.exists()) {
                 dir.eachFileRecurse { f -> if (f.isFile()) uploaded << f.toString().replace(atomicAssetsDir.toString() + File.separator, '') }
