@@ -1,5 +1,5 @@
 # Модели противогаза
 
-Сюда загружай JSON-модели предметов Minecraft, экспортированные из Blockbench. Файлы попадут в `assets/beforethefall/models/item/`.
+Твоя основная модель уже загружена: `src/main/resources/blockbench/gas_mask.bbmodel`. Сборка автоматически экспортирует её и назначает шлему противогаза. Фильтр использует `blockbench/gas_filter.bbmodel`.
 
-Основная модель противогаза уже берётся из `src/main/resources/blockbench/gas_mask.bbmodel` и автоматически назначается предмету-шлему. Дополнительные модели можно положить сюда.
+Если нужно заменить или добавить готовую Minecraft JSON-модель, клади её сюда. Формат — .json; Blockbench исходники остаются в `src/main/resources/blockbench/`.
