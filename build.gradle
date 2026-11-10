@@ -39,6 +39,27 @@ tasks.register('generateAtomicResourcePack') {
     def encoded=texture.source.substring(texture.source.indexOf(',')+1)
     def textureFile=new File(root,"assets/beforethefall/textures/item/${modelName}.png")
     textureFile.parentFile.mkdirs(); textureFile.bytes=java.util.Base64.decoder.decode(encoded)
+    if(modelName=='gas_mask') {
+     def baseImage=javax.imageio.ImageIO.read(textureFile)
+     ['cracked','fogged','cracked_fogged'].each { state ->
+      def variant=new java.awt.image.BufferedImage(baseImage.width,baseImage.height,java.awt.image.BufferedImage.TYPE_INT_ARGB)
+      def vg=variant.createGraphics(); vg.drawImage(baseImage,0,0,null)
+      if(state.contains('fogged')) {
+       vg.setColor(new java.awt.Color(225,238,235,125)); vg.fillRoundRect(64,0,16,16,5,5)
+       vg.setColor(new java.awt.Color(245,250,248,100)); vg.fillOval(67,3,10,5); vg.fillOval(65,10,13,4)
+      }
+      if(state.contains('cracked')) {
+       vg.setStroke(new java.awt.BasicStroke(0.55f)); vg.setColor(new java.awt.Color(12,18,18,230))
+       vg.drawPolyline([65,69,68,73,72,78] as int[],[1,5,8,10,13,15] as int[],6)
+       vg.drawLine(69,5,66,8); vg.drawLine(73,10,77,7); vg.drawLine(72,13,69,15)
+       vg.setStroke(new java.awt.BasicStroke(0.25f)); vg.setColor(new java.awt.Color(225,235,228,245))
+       vg.drawPolyline([65,69,68,73,72,78] as int[],[0,4,7,9,12,14] as int[],6)
+       vg.drawLine(69,4,66,7); vg.drawLine(73,9,77,6); vg.drawLine(72,12,69,14)
+      }
+      vg.dispose()
+      javax.imageio.ImageIO.write(variant,'png',new File(root,"assets/beforethefall/textures/item/gas_mask_${state}.png"))
+     }
+    }
     def cubes=data.elements.findAll { it.type=='cube' && it.faces }
     def maxCoord=1.0d
     cubes.each { cube -> (cube.from+cube.to).each { value -> maxCoord=Math.max(maxCoord,Math.abs((value as Number).doubleValue())) } }
@@ -65,9 +86,17 @@ tasks.register('generateAtomicResourcePack') {
       'textures':['layer0':"beforethefall:item/${modelName}",'0':"beforethefall:item/${modelName}"],'elements':exported]
     def modelFile=new File(root,"assets/beforethefall/models/item/${modelName}.json")
     modelFile.parentFile.mkdirs(); modelFile.setText(groovy.json.JsonOutput.toJson(json),'UTF-8')
+    if(modelName=='gas_mask') {
+     ['cracked','fogged','cracked_fogged'].each { state ->
+      def variantJson=new LinkedHashMap(json)
+      variantJson.textures=['layer0':"beforethefall:item/gas_mask_${state}",'0':"beforethefall:item/gas_mask_${state}"]
+      def vf=new File(root,"assets/beforethefall/models/item/gas_mask_${state}.json")
+      vf.parentFile.mkdirs(); vf.setText(groovy.json.JsonOutput.toJson(variantJson),'UTF-8')
+     }
+    }
    }
   }
-  writeText('assets/minecraft/models/item/leather_helmet.json','{"parent":"minecraft:item/generated","textures":{"layer0":"minecraft:item/leather_helmet"},"overrides":[{"predicate":{"custom_model_data":21},"model":"beforethefall:item/gas_mask"},{"predicate":{"custom_model_data":22},"model":"beforethefall:item/gas_mask"},{"predicate":{"custom_model_data":23},"model":"beforethefall:item/gas_mask"},{"predicate":{"custom_model_data":24},"model":"beforethefall:item/gas_mask"}]}')
+  writeText('assets/minecraft/models/item/leather_helmet.json','{"parent":"minecraft:item/generated","textures":{"layer0":"minecraft:item/leather_helmet"},"overrides":[{"predicate":{"custom_model_data":21},"model":"beforethefall:item/gas_mask"},{"predicate":{"custom_model_data":22},"model":"beforethefall:item/gas_mask_cracked"},{"predicate":{"custom_model_data":23},"model":"beforethefall:item/gas_mask_fogged"},{"predicate":{"custom_model_data":24},"model":"beforethefall:item/gas_mask_cracked_fogged"}]}')
   writeText('assets/minecraft/models/item/paper.json','{"parent":"minecraft:item/generated","textures":{"layer0":"minecraft:item/paper"},"overrides":[{"predicate":{"custom_model_data":20},"model":"beforethefall:item/gas_filter"}]}')
   writeText('assets/minecraft/models/item/tnt.json','{"parent":"minecraft:item/generated","textures":{"layer0":"minecraft:item/tnt"},"overrides":[{"predicate":{"custom_model_data":3},"model":"beforethefall:item/nuclear_bomb"}]}')
   ant.zip(destfile:new File(root.parentFile,'resourcepack.zip'),basedir:root)
