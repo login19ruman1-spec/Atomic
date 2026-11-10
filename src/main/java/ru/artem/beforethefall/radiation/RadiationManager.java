@@ -1,7 +1,6 @@
 package ru.artem.beforethefall.radiation;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -114,12 +113,7 @@ public final class RadiationManager {
             doses.put(player.getUniqueId(), clamp(next));
             if (intake > 0.01 && ticks % 2 == 0) {
                 World w = player.getWorld();
-                Location aura = loc.clone().add(0, 1.0, 0);
-                w.spawnParticle(Particle.WITCH, aura, 3, .3, .4, .3, .015);
-                w.spawnParticle(Particle.DUST, aura, 5, .45, .55, .45, 0.0,
-                        new Particle.DustOptions(Color.fromRGB(85, 255, 105), 1.15f));
-                if (get(player) >= 50.0)
-                    w.spawnParticle(Particle.SMOKE, aura, 2, .2, .25, .2, .005);
+                w.spawnParticle(Particle.WITCH, loc.clone().add(0, 1.0, 0), 2, .25, .35, .25, .01);
             }
             applySymptoms(player);
         }
@@ -136,13 +130,7 @@ public final class RadiationManager {
         }
         for(FalloutZone z:fallout) if(z.world.equals(loc.getWorld().getUID())) {
             double dx=loc.getX()-z.x,dy=loc.getY()-z.y,dz=loc.getZ()-z.z,d2=dx*dx+dy*dy+dz*dz;
-            double distance=Math.sqrt(d2);
-            if(distance<=z.radius) {
-                double falloff=1.0-distance/z.radius;
-                // Fallout remains measurable across the whole contaminated radius,
-                // but becomes dramatically more dangerous toward ground zero.
-                result+=z.intensity*(0.02+0.98*falloff*falloff);
-            }
+            if(d2<=z.radius*z.radius) result+=z.intensity/(1.0+d2/100.0);
         }
         return result * plugin.getConfig().getDouble("radiation.intake-scale", 0.12);
     }

@@ -1,0 +1,18 @@
+name: BeforeTheFall
+version: 0.2.0-atomic
+main: ru.artem.beforethefall.BeforeTheFallPlugin
+api-version: '1.21'
+authors: [Atomic Survival]
+description: Atomic disaster survival with radiation, gas masks, filters, bunkers and an embedded resource pack.
+commands:
+  beforethefall:
+    description: BeforeTheFall survival and administration command
+    aliases: [bft, bfall]
+    usage: /beforethefall <status|menu|gasmask|filter|ashstorm|nuke|radiation|zone|reload>
+permissions:
+  beforethefall.admin:
+    description: Allows administration of BeforeTheFall
+    default: op
+  beforethefall.status:
+    description: Allows viewing personal contamination status
+    default: true

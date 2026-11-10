@@ -1,0 +1,55 @@
+name: Build Paper plugin
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10'
+      - name: Compile and test
+        run: gradle --no-daemon clean test build
+      - name: Verify plugin descriptor
+        run: unzip -l build/libs/BeforeTheFall-Paper-*.jar | grep -E ' plugin.yml$'
+      - name: Verify embedded resource pack
+        run: |
+          JAR=$(find build/libs -name 'BeforeTheFall-Paper-*.jar' -print -quit)
+          unzip -p "$JAR" resourcepack.zip > build/resourcepack.zip
+          unzip -t build/resourcepack.zip
+          unzip -l build/resourcepack.zip | grep -E 'assets/beforethefall/models/item/(nuclear_bomb|nuclear_explosion|gas_mask|gas_filter).json'
+          unzip -l build/resourcepack.zip | grep -E 'assets/beforethefall/textures/item/(nuclear_bomb|nuclear_explosion|gas_mask|gas_filter).png'
+          unzip -l build/resourcepack.zip | grep -E 'assets/minecraft/models/item/(tnt|firework_star|leather_helmet|paper).json'
+      - name: Publish resource pack for automatic client download
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: resourcepack-latest
+          name: Atomic resource pack (latest)
+          prerelease: true
+          make_latest: false
+          overwrite_files: true
+          files: build/resources/main/resourcepack.zip
+      - name: Upload plugin JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: BeforeTheFall-Paper-1.21.4
+          path: build/libs/BeforeTheFall-Paper-*.jar
+          if-no-files-found: error
+          retention-days: 30

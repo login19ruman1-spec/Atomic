@@ -114,11 +114,11 @@ public final class NuclearBlastManager {
             if (!player.getWorld().equals(world)) continue;
             double distance = player.getLocation().distance(center);
             if (distance <= plugin.getConfig().getDouble("nuclear-blast.distant-sound-radius", 3000.0))
-                player.playSound(player.getLocation(), "beforethefall:blast_distant", SoundCategory.MASTER, 1.0f, 1.0f);
+                player.playSound(center, "beforethefall:blast_distant", SoundCategory.MASTER, 1.0f, 1.0f);
             if (distance <= plugin.getConfig().getDouble("nuclear-blast.shock-sound-radius", 2000.0))
-                player.playSound(player.getLocation(), "beforethefall:blast_wave", SoundCategory.MASTER, 1.0f, 1.0f);
+                player.playSound(center, "beforethefall:blast_wave", SoundCategory.MASTER, 1.0f, 1.0f);
             if (distance <= plugin.getConfig().getDouble("nuclear-blast.close-sound-radius", 50.0))
-                player.playSound(player.getLocation(), "beforethefall:blast_close", SoundCategory.MASTER, 1.0f, 1.0f);
+                player.playSound(center, "beforethefall:blast_close", SoundCategory.MASTER, 1.0f, 1.0f);
         }
     }
 
