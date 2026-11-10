@@ -1,9 +1,14 @@
-# Звуки противогаза
+# Звуки — загружай сюда OGG
 
-Загружай сюда OGG-файлы с точными именами:
-- `equip.ogg` — надевание противогаза (`beforethefall:gas_mask_on`)
-- `filter.ogg` — установка фильтра (`beforethefall:gas_mask_filter`)
-- `breath.ogg` — дыхание через маску (`beforethefall:gas_mask_breath`)
-- `empty.ogg` — фильтр закончился (`beforethefall:gas_mask_empty`)
+Все звуки лежат в этой папке. Формат: OGG Vorbis.
 
-Формат: `.ogg`.
+- `blast/close.ogg` — взрыв рядом, до 50 блоков.
+- `blast/wave.ogg` — ударная волна, 50–2000 блоков.
+- `blast/distant.ogg` — далёкий гул, 2000–3000 блоков.
+- `dosimeter/measure.ogg` — щелчок/измерение дозиметра.
+- `gas-mask/equip.ogg` — надевание противогаза.
+- `gas-mask/filter.ogg` — установка фильтра.
+- `gas-mask/breath.ogg` — дыхание внутри маски (примерно раз в 5 секунд).
+- `gas-mask/empty.ogg` — фильтр закончился.
+
+Для взрыва используется только один слой на игрока по расстоянию; звуки не накладываются. Отдельного подземного слоя нет.
