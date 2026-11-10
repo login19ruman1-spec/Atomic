@@ -20,9 +20,13 @@ tasks.named('generateAtomicResourcePack') {
         copyAssetTree('photos', 'assets/beforethefall/textures/photos')
         // Optional custom item/block model JSON files, preserving relative paths.
         copyAssetTree('models', 'assets/beforethefall/models')
+        // Gas-mask upload area: drop PNGs, item model JSONs and OGG sounds into the three dedicated folders.
+        copyAssetTree('gas-mask/textures', 'assets/beforethefall/textures/item')
+        copyAssetTree('gas-mask/models', 'assets/beforethefall/models/item')
 
         // Sound files are uploaded under sounds/, and exposed as stable sound event IDs.
         def soundsDir = new File(atomicAssetsDir, 'sounds')
+        def gasMaskSoundsDir = new File(atomicAssetsDir, 'gas-mask/sounds')
         def soundEvents = [
             blast_distant: 'blast/distant',
             blast_wave: 'blast/wave',
@@ -31,9 +35,19 @@ tasks.named('generateAtomicResourcePack') {
             nuke_launch: 'nuke/launch',
             nuke_blast: 'nuke/blast',
             nuke_impact: 'nuke/impact',
-            nuke_fallout: 'nuke/fallout'
+            nuke_fallout: 'nuke/fallout',
+            gas_mask_on: 'gas-mask/equip',
+            gas_mask_filter: 'gas-mask/filter',
+            gas_mask_breath: 'gas-mask/breath',
+            gas_mask_empty: 'gas-mask/empty'
         ]
         def soundsJson = [:]
+        ['gas_mask_on': 'equip', 'gas_mask_filter': 'filter', 'gas_mask_breath': 'breath', 'gas_mask_empty': 'empty'].each { eventName, fileName ->
+            def soundFile = new File(gasMaskSoundsDir, fileName + '.ogg')
+            if (soundFile.exists()) {
+                soundsJson[eventName] = [sounds: [[name: 'beforethefall:gas-mask/' + fileName, stream: true]]]
+            }
+        }
         soundEvents.each { eventName, soundPath ->
             def soundFile = new File(soundsDir, soundPath + '.ogg')
             if (soundFile.exists()) {
@@ -57,7 +71,7 @@ tasks.named('generateAtomicResourcePack') {
 
         // Keep user-supplied files visible in the build log for easier troubleshooting.
         def uploaded = []
-        ['textures', 'photos', 'models', 'sounds'].each { folder ->
+        ['textures', 'photos', 'models', 'sounds', 'gas-mask'].each { folder ->
             def dir = new File(atomicAssetsDir, folder)
             if (dir.exists()) {
                 dir.eachFileRecurse { f -> if (f.isFile()) uploaded << f.toString().replace(atomicAssetsDir.toString() + File.separator, '') }
