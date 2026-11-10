@@ -64,6 +64,52 @@ tasks.register('generateAtomicResourcePack') {
             g.setColor(new java.awt.Color(115,65,50)); g.fillOval(4,0,9,9); g.fillOval(18,1,11,9); g.fillOval(11,0,10,7)
             g.setColor(new java.awt.Color(255,220,90)); g.fillRect(14,17,4,13)
         }
+        // Pixel-art radioactive ash: same thin-layer collision/stacking as snow, visually replaced in the pack.
+        png('assets/minecraft/textures/block/snow.png',16,16) { g, im ->
+            def rng = new java.util.Random(712367L)
+            for (int y=0; y<16; y++) for (int x=0; x<16; x++) {
+                int n = rng.nextInt(5)
+                int base = 75 + n * 8
+                g.setColor(new java.awt.Color(base, base + 2, base + 3, 255))
+                g.fillRect(x,y,1,1)
+            }
+            g.setColor(new java.awt.Color(38,42,43)); g.fillRect(2,3,2,1); g.fillRect(10,8,3,1); g.fillRect(5,13,2,1)
+            g.setColor(new java.awt.Color(145,148,145)); g.fillRect(6,2,2,1); g.fillRect(13,12,2,1); g.fillRect(1,10,1,2)
+        }
+        // Eight-frame animated mushroom-cloud billboard; frames are stacked vertically for Minecraft animation.
+        def blastFile = new File(root, 'assets/beforethefall/textures/item/atomic_blast.png')
+        blastFile.parentFile.mkdirs()
+        def sheet = new java.awt.image.BufferedImage(128, 128 * 8, java.awt.image.BufferedImage.TYPE_INT_ARGB)
+        for (int frame=0; frame<8; frame++) {
+            def g = sheet.createGraphics()
+            g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_OFF)
+            g.translate(0, frame * 128)
+            int pulse = frame % 4
+            // Ground flash and long lateral shock front.
+            g.setColor(new java.awt.Color(255, 105, 20, 170)); g.fillOval(5, 91-pulse, 118, 22+pulse)
+            g.setColor(new java.awt.Color(255, 205, 45, 230)); g.fillOval(14, 96-pulse, 100, 10+pulse)
+            // Hot rising stem.
+            g.setColor(new java.awt.Color(255, 90, 15)); g.fillPolygon(new int[]{48,57,71,82}, new int[]{111,54,54,111}, 4)
+            g.setColor(new java.awt.Color(255, 190, 35)); g.fillPolygon(new int[]{54,61,68,76}, new int[]{108,57,57,108}, 4)
+            g.setColor(new java.awt.Color(255, 245, 170)); g.fillRect(61,61,7,44)
+            // Mushroom cap silhouette with irregular rolling lobes.
+            g.setColor(new java.awt.Color(112, 57, 39))
+            g.fillOval(15,31-pulse,98,48+pulse); g.fillOval(22,17-pulse,32,35); g.fillOval(45,8-pulse,38,42); g.fillOval(76,18-pulse,30,34)
+            g.setColor(new java.awt.Color(190, 83, 34))
+            g.fillOval(19,29-pulse,90,39+pulse); g.fillOval(30,18-pulse,27,27); g.fillOval(52,12-pulse,29,32); g.fillOval(78,21-pulse,24,26)
+            g.setColor(new java.awt.Color(255, 137, 28))
+            g.fillOval(27,37-pulse,74,25+pulse); g.fillOval(39,27-pulse,23,22); g.fillOval(63,23-pulse,23,25)
+            g.setColor(new java.awt.Color(255, 207, 57))
+            g.fillOval(42,43-pulse,45,15+pulse); g.fillOval(54,34-pulse,19,17)
+            g.setColor(new java.awt.Color(255, 247, 174)); g.fillOval(57,46-pulse,14,10+pulse)
+            // Flickering debris and fire tongues.
+            g.setColor(new java.awt.Color(255, 180, 45))
+            for (int i=0;i<10;i++) { int x=(i*29+frame*7)%120+4; int y=75+(i*13+frame*3)%34; g.fillRect(x,y,2,5); }
+            g.dispose()
+        }
+        javax.imageio.ImageIO.write(sheet, 'png', blastFile)
+        writeText('assets/beforethefall/textures/item/atomic_blast.png.mcmeta',
+            '{"animation":{"frametime":3,"interpolate":true,"frames":[0,1,2,3,4,5,6,7]}}')
         def itemModel = { String item, String texture ->
             writeText("assets/minecraft/models/item/${item}.json", """{"parent":"minecraft:item/generated","textures":{"layer0":"beforethefall:item/${texture}"},"overrides":[{"predicate":{"custom_model_data":${item=='carved_pumpkin'?1:item=='iron_ingot'?2:item=='tnt'?3:item=='lodestone'?4:5}},"model":"beforethefall:item/${texture}"}]}""")
         }
