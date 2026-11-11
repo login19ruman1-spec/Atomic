@@ -6,7 +6,10 @@ radiation:
   warning-threshold: 25.0
   sickness-threshold: 50.0
   severe-threshold: 75.0
-  contaminated-water-intake: 2.5
+  contaminated-water-intake: 1.25
+  contaminated-water-reading: 4.0
+  gas-mask-inhalation-factor: 0.12
+  full-suit-factor: 0.45
   zones: []
   fallout-zones: []
 ash-storm:
@@ -22,7 +25,8 @@ nuclear-blast:
   destroy-blocks: true
   block-radius: 25
   fallout-intensity: 100.0
-  fallout-radius: 400.0
+  fallout-radius: 3000.0
+  fallout-propagation-radius: 3000.0
   fallout-duration-hours: 72
   distant-sound-radius: 3000.0
   shock-sound-radius: 2000.0
@@ -38,7 +42,8 @@ bunkers:
 aftermath:
   dark-sky: true
   dark-sky-days: 3
-  water-radius: 1650.0
+  water-radius: 3000.0
+  water-contamination-radius: 3000.0
   terrain-radius: 900.0
   contamination-hours: 72
 resource-pack:
