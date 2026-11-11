@@ -1,10 +1,14 @@
 package ru.artem.beforethefall.equipment;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 
 import org.bukkit.SoundCategory;
+import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -17,15 +21,50 @@ import org.bukkit.persistence.PersistentDataType;
 import ru.artem.beforethefall.BeforeTheFallPlugin;
 
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.UUID;
 import java.util.Locale;
 
 public final class DosimeterManager implements Listener {
     private final BeforeTheFallPlugin plugin;
     private final NamespacedKey marker;
+    private final Set<UUID> scanning = new HashSet<>();
+    private BukkitTask scanTask;
 
     public DosimeterManager(BeforeTheFallPlugin plugin) {
         this.plugin = plugin;
         this.marker = new NamespacedKey(plugin, "dosimeter");
+    }
+
+    public void start() {
+        if (scanTask != null) scanTask.cancel();
+        scanTask = Bukkit.getScheduler().runTaskTimer(plugin, this::updateScanners, 20L, 20L);
+    }
+
+    public void stop() {
+        if (scanTask != null) scanTask.cancel();
+        scanning.clear();
+    }
+
+    private void updateScanners() {
+        for (UUID id : Set.copyOf(scanning)) {
+            Player player = Bukkit.getPlayer(id);
+            if (player == null || (!isDosimeter(player.getInventory().getItemInMainHand())
+                    && !isDosimeter(player.getInventory().getItemInOffHand()))) {
+                scanning.remove(id);
+                continue;
+            }
+            double ambient = plugin.getRadiationManager().getAmbientLevel(player);
+            double dose = plugin.getRadiationManager().get(player);
+            boolean water = plugin.getRadiationManager().isInContaminatedWater(player);
+            NamedTextColor color = ambient >= 8.0 ? NamedTextColor.DARK_RED
+                    : ambient >= 4.0 ? NamedTextColor.RED
+                    : ambient >= 1.0 ? NamedTextColor.YELLOW : NamedTextColor.GREEN;
+            String medium = water ? " | ВОДА ЗАГРЯЗНЕНА" : "";
+            player.sendActionBar(Component.text(String.format(Locale.US,
+                    "ДП-5  %.2f мкЗв/ч  |  Доза %.1f/100%s", ambient, dose, medium), color));
+        }
     }
 
     public ItemStack createDosimeter() {
@@ -78,6 +117,12 @@ public final class DosimeterManager implements Listener {
                 + ChatColor.DARK_GRAY + " | " + (plugin.getProtectiveSuitManager() != null
                 && plugin.getProtectiveSuitManager().hasFullSuit(player)
                 ? ChatColor.GREEN + "костюм" : ChatColor.GRAY + "без полного костюма"));
+        if (scanning.remove(player.getUniqueId())) {
+            player.sendMessage(ChatColor.YELLOW + "Непрерывное измерение выключено.");
+        } else {
+            scanning.add(player.getUniqueId());
+            player.sendMessage(ChatColor.GREEN + "Непрерывное измерение включено. Держи дозиметр в руке.");
+        }
         player.playSound(player.getLocation(), "beforethefall:dosimeter_measure", SoundCategory.PLAYERS, 0.75f, 1.0f);
         event.setCancelled(true);
     }
