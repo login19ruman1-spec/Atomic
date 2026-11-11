@@ -2,7 +2,7 @@ name: Build Paper plugin
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, paper-1.21.4-release-docs ]
   pull_request:
   workflow_dispatch:
 
@@ -49,7 +49,9 @@ jobs:
           prerelease: true
           make_latest: false
           overwrite_files: true
-          files: build/resources/main/resourcepack.zip
+          files: |
+            build/resources/main/resourcepack.zip
+            build/libs/BeforeTheFall-Paper-*.jar
       - name: Upload plugin JAR
         uses: actions/upload-artifact@v4
         with:
