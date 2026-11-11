@@ -1,9 +1,14 @@
 package ru.artem.beforethefall.equipment;
-import org.bukkit.Bukkit;import org.bukkit.ChatColor;import org.bukkit.Location;import org.bukkit.Material;import org.bukkit.NamespacedKey;import org.bukkit.Particle;import org.bukkit.Sound;import org.bukkit.SoundCategory;import org.bukkit.entity.Player;import org.bukkit.event.EventHandler;import org.bukkit.event.Listener;import org.bukkit.event.block.Action;import org.bukkit.event.player.PlayerInteractEvent;import org.bukkit.inventory.EquipmentSlot;import org.bukkit.inventory.ItemStack;import org.bukkit.inventory.meta.ItemMeta;import org.bukkit.persistence.PersistentDataType;import org.bukkit.scheduler.BukkitTask;import ru.artem.beforethefall.BeforeTheFallPlugin;import java.util.List;import java.util.HashSet;import java.util.Set;
+import org.bukkit.Bukkit;import org.bukkit.ChatColor;import org.bukkit.Location;import org.bukkit.Material;import org.bukkit.NamespacedKey;import org.bukkit.Particle;import org.bukkit.Sound;import org.bukkit.SoundCategory;import org.bukkit.entity.Player;import org.bukkit.event.EventHandler;import org.bukkit.event.Listener;import org.bukkit.event.block.Action;import org.bukkit.event.player.PlayerInteractEvent;import org.bukkit.inventory.EquipmentSlot;import org.bukkit.inventory.ItemStack;import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.components.EquippableComponent;import org.bukkit.persistence.PersistentDataType;import org.bukkit.scheduler.BukkitTask;import ru.artem.beforethefall.BeforeTheFallPlugin;import java.util.List;import java.util.HashSet;import java.util.Set;
 public final class GasMaskManager implements Listener {
  private static final int MAX_DURABILITY=100; private final BeforeTheFallPlugin plugin; private final NamespacedKey marker,filter,filterItem,maskDurability; private BukkitTask task; private int ticks; private final Set<java.util.UUID> wearing=new HashSet<>();
  public GasMaskManager(BeforeTheFallPlugin p){plugin=p;marker=new NamespacedKey(p,"gas_mask");filter=new NamespacedKey(p,"filter_ticks");filterItem=new NamespacedKey(p,"replacement_filter");maskDurability=new NamespacedKey(p,"mask_durability");}
- public ItemStack createMask(){ItemStack item=new ItemStack(Material.LEATHER_HELMET);ItemMeta meta=item.getItemMeta();meta.setDisplayName(ChatColor.DARK_GREEN+"Противогаз");meta.setItemModel(new NamespacedKey(plugin, "gas_mask"));meta.setLore(List.of(ChatColor.GRAY+"Защита от радиоактивной пыли и пепла",ChatColor.GRAY+"Прочность: 100%",ChatColor.GRAY+"Сменный фильтр: "+plugin.getConfig().getInt("gas-mask.filter-duration-seconds",900)+" секунд",ChatColor.YELLOW+"Надень в слот шлема"));meta.getPersistentDataContainer().set(marker,PersistentDataType.BYTE,(byte)1);meta.getPersistentDataContainer().set(filter,PersistentDataType.INTEGER,0);meta.getPersistentDataContainer().set(maskDurability,PersistentDataType.INTEGER,MAX_DURABILITY);item.setItemMeta(meta);return item;}
+ public ItemStack createMask(){ItemStack item=new ItemStack(Material.LEATHER_HELMET);ItemMeta meta=item.getItemMeta();meta.setDisplayName(ChatColor.DARK_GREEN+"Противогаз");meta.setItemModel(new NamespacedKey(plugin, "gas_mask"));
+  EquippableComponent equip = meta.getEquippable();
+  equip.setSlot(EquipmentSlot.HEAD);
+  equip.setCameraOverlay(new NamespacedKey(plugin, "gui/gasmask_overlay"));
+  meta.setEquippable(equip);meta.setLore(List.of(ChatColor.GRAY+"Защита от радиоактивной пыли и пепла",ChatColor.GRAY+"Прочность: 100%",ChatColor.GRAY+"Сменный фильтр: "+plugin.getConfig().getInt("gas-mask.filter-duration-seconds",900)+" секунд",ChatColor.YELLOW+"Надень в слот шлема"));meta.getPersistentDataContainer().set(marker,PersistentDataType.BYTE,(byte)1);meta.getPersistentDataContainer().set(filter,PersistentDataType.INTEGER,0);meta.getPersistentDataContainer().set(maskDurability,PersistentDataType.INTEGER,MAX_DURABILITY);item.setItemMeta(meta);return item;}
  public ItemStack createFilter(){ItemStack item=new ItemStack(Material.PAPER);ItemMeta meta=item.getItemMeta();meta.setDisplayName(ChatColor.GREEN+"Сменный фильтр");meta.setItemModel(new NamespacedKey(plugin, "gas_filter"));meta.setLore(List.of(ChatColor.GRAY+"Картридж для противогаза",ChatColor.GRAY+"Ресурс: "+plugin.getConfig().getInt("gas-mask.filter-duration-seconds",900)+" секунд"));meta.getPersistentDataContainer().set(filterItem,PersistentDataType.BYTE,(byte)1);item.setItemMeta(meta);return item;}
  public boolean isFilter(ItemStack i){if(i==null||!i.hasItemMeta())return false;Byte v=i.getItemMeta().getPersistentDataContainer().get(filterItem,PersistentDataType.BYTE);return v!=null&&v==(byte)1;}
  public boolean isMask(ItemStack i){if(i==null||!i.hasItemMeta())return false;Byte v=i.getItemMeta().getPersistentDataContainer().get(marker,PersistentDataType.BYTE);return v!=null&&v==(byte)1;}
@@ -16,7 +21,14 @@ public final class GasMaskManager implements Listener {
                 ? (fogged ? "gas_mask_cracked_fogged" : "gas_mask_cracked")
                 : (fogged ? "gas_mask_fogged" : "gas_mask");
         NamespacedKey modelKey = new NamespacedKey(plugin, model);
-        if (!modelKey.equals(m.getItemModel())) m.setItemModel(modelKey);if(old!=d)updateLore(m,filterTicks(mask),d);mask.setItemMeta(m);}
+        if (!modelKey.equals(m.getItemModel())) m.setItemModel(modelKey);
+        String overlay = d <= 50
+                ? "gui/gasmask_overlay_cracked"
+                : (fogged ? "gui/gasmask_overlay_ash" : "gui/gasmask_overlay");
+        EquippableComponent equip = m.getEquippable();
+        equip.setSlot(EquipmentSlot.HEAD);
+        equip.setCameraOverlay(new NamespacedKey(plugin, overlay));
+        m.setEquippable(equip);if(old!=d)updateLore(m,filterTicks(mask),d);mask.setItemMeta(m);}
  private ItemStack migrateLegacyMask(ItemStack old){
   if(old==null||old.getType()==Material.LEATHER_HELMET||!isMask(old))return old;
   ItemStack updated=new ItemStack(Material.LEATHER_HELMET);
