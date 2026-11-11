@@ -105,25 +105,26 @@ public final class NuclearBlastManager {
     }
 
     private void playGlobalSoundLayers(World world, Location center) {
-        // Play at the listener's position: a positional sound at the blast would become
-        // inaudible long before the configured 2-3 km ranges. Exactly one layer is used
-        // per listener, so the distant, wave and close recordings do not stack.
-        double closeRadius = plugin.getConfig().getDouble("nuclear-blast.close-sound-radius", 50.0);
-        double waveRadius = plugin.getConfig().getDouble("nuclear-blast.shock-sound-radius", 2000.0);
-        double distantRadius = plugin.getConfig().getDouble("nuclear-blast.distant-sound-radius", 3000.0);
-
+        final double maxDistance = plugin.getConfig().getDouble("nuclear-blast.close-sound-radius", 500.0);
         for (Player player : world.getPlayers()) {
-            double distance = player.getLocation().distance(center);
-            if (distance <= closeRadius) {
-                player.playSound(player.getLocation(), "beforethefall:blast_close", SoundCategory.MASTER, 1.0f, 1.0f);
-            } else if (distance <= waveRadius) {
-                float volume = (float) Math.max(0.35, 0.85 - (distance / waveRadius) * 0.35);
-                player.playSound(player.getLocation(), "beforethefall:blast_wave", SoundCategory.MASTER, volume, 1.0f);
-            } else if (distance <= distantRadius) {
-                float volume = (float) Math.max(0.20, 0.55 - (distance / distantRadius) * 0.25);
-                player.playSound(player.getLocation(), "beforethefall:blast_distant", SoundCategory.MASTER, volume, 1.0f);
-            }
+            if (player.getLocation().distanceSquared(center) > maxDistance * maxDistance) continue;
+
+            boolean underground = player.getLocation().getY() < 60
+                    || player.getLocation().getBlock().getLightFromSky() == 0;
+            String sound = underground
+                    ? "beforethefall:blast_distant"
+                    : "beforethefall:blast_close";
+
+            player.playSound(center, sound, SoundCategory.MASTER, 1.0f, 1.0f);
         }
+
+        long delay = Math.max(20L, plugin.getConfig().getLong("nuclear-blast.shockwave-delay-ticks", 30L));
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            for (Player player : world.getPlayers()) {
+                if (player.getLocation().distanceSquared(center) > maxDistance * maxDistance) continue;
+                player.playSound(center, "beforethefall:blast_wave", SoundCategory.MASTER, 0.35f, 1.0f);
+            }
+        }, delay);
     }
 
     private void startEarthquake(World world, Location center) {
