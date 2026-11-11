@@ -242,10 +242,13 @@ public final class NuclearBlastManager {
                     continue;
                 }
                 // A guaranteed pulverized core with irregular surviving pockets farther out.
+                boolean waterOrIce = block.isLiquid() || type == Material.ICE
+                        || type == Material.FROSTED_ICE || type == Material.PACKED_ICE
+                        || type == Material.BLUE_ICE;
                 double chance = normalized < 0.12 ? 1.0 : 0.78 - normalized * 0.43;
-                if (random.nextDouble() <= chance) {
+                if (waterOrIce || random.nextDouble() <= chance) {
                     block.setType(Material.AIR, false);
-                    if (random.nextDouble() < 0.018) {
+                    if (!waterOrIce && random.nextDouble() < 0.018) {
                         Block below = block.getRelative(0, -1, 0);
                         if (below.getType().isSolid() && block.getType().isAir()) block.setType(Material.FIRE, false);
                     }
