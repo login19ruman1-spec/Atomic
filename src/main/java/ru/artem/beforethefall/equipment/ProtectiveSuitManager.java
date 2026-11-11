@@ -10,8 +10,8 @@ import org.bukkit.persistence.PersistentDataType;
 import ru.artem.beforethefall.BeforeTheFallPlugin;
 import java.util.List;
 public final class ProtectiveSuitManager {
- private final NamespacedKey marker;
- public ProtectiveSuitManager(BeforeTheFallPlugin plugin){marker=new NamespacedKey(plugin,"radiation_suit_piece");}
+ private final NamespacedKey marker; private final BeforeTheFallPlugin plugin;
+ public ProtectiveSuitManager(BeforeTheFallPlugin plugin){this.plugin=plugin;marker=new NamespacedKey(plugin,"radiation_suit_piece");}
  public ItemStack createPiece(Material type,String part){
   ItemStack item=new ItemStack(type); LeatherArmorMeta meta=(LeatherArmorMeta)item.getItemMeta();
   meta.setColor(Color.fromRGB(232,190,34)); meta.setDisplayName(ChatColor.GOLD+"Защитный костюм — "+part);
@@ -25,7 +25,9 @@ public final class ProtectiveSuitManager {
  }
  public boolean hasFullSuit(Player p){
   var inv=p.getInventory();
-  return isPiece(inv.getHelmet(),Material.LEATHER_HELMET)&&isPiece(inv.getChestplate(),Material.LEATHER_CHESTPLATE)
+  boolean head = isPiece(inv.getHelmet(),Material.LEATHER_HELMET)
+   || (plugin.getGasMaskManager()!=null && plugin.getGasMaskManager().isProtected(p));
+  return head&&isPiece(inv.getChestplate(),Material.LEATHER_CHESTPLATE)
    &&isPiece(inv.getLeggings(),Material.LEATHER_LEGGINGS)&&isPiece(inv.getBoots(),Material.LEATHER_BOOTS);
  }
 }
