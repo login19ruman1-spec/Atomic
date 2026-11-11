@@ -32,9 +32,9 @@ nuclear-blast:
   fallout-radius: 3000.0
   fallout-propagation-radius: 3000.0
   fallout-duration-hours: 72
-  distant-sound-radius: 4000.0
-  shock-sound-radius: 2500.0
-  close-sound-radius: 75.0
+  distant-sound-radius: 3000.0
+  shock-sound-radius: 2000.0
+  close-sound-radius: 50.0
   placed-charges: []
 gas-mask:
   filter-duration-seconds: 900
