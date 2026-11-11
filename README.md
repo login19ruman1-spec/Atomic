@@ -194,7 +194,7 @@ Requirements: Java 21 and Gradle 8.10 (or use the Gradle wrapper if one is added
 gradle --no-daemon clean test build
 ```
 
-The build generates the embedded resource pack and packages it into the plugin JAR. GitHub Actions runs the same build on pushes, pull requests and manual dispatch. Successful runs upload the plugin JAR as a 30-day Actions artifact.
+The build generates the embedded resource pack and packages it into the plugin JAR. GitHub Actions runs the same build on pushes to `main`, `master` and `paper-1.21.4-release-docs`, on pull requests, and on manual dispatch. Successful runs upload the plugin JAR as a 30-day Actions artifact and publish the plugin JAR plus resource-pack ZIP to the `resourcepack-latest` GitHub Release.
 
 ## Models, textures and sounds
 
@@ -202,15 +202,15 @@ The build generates the embedded resource pack and packages it into the plugin J
 - Blockbench source models belong under `src/main/resources/atomic-assets/models/item/` or `src/main/resources/blockbench/`. The Gradle resource-pack task exports the embedded Blockbench texture and cube geometry.
 - Optional resource-pack textures belong under `src/main/resources/atomic-assets/textures/`.
 - Optional OGG files belong under `src/main/resources/atomic-assets/sounds/`. Sound events are emitted only for files present when the pack is generated.
-- The gas-mask overlay PNGs should be placed in `src/main/resources/atomic-assets/textures/gui/`; the build copies the asset tree into the pack. A server resource pack cannot conditionally change a player's camera overlay based solely on wearing an arbitrary helmet; a client-side mod is required for a truly conditional full-screen visor overlay.
+- The three supplied gas-mask overlay PNGs are stored in `src/main/resources/atomic-assets/textures/gui/` and are selected through the helmet's 1.21.4 `EquippableComponent#setCameraOverlay`. The clean, fogged and cracked states therefore work with the server resource pack when the tagged gas mask is equipped.
 
 The pack skins vanilla snow layers as ash while retaining their thin-layer collision and stacking. Vanilla snow layers share the ash texture while the pack is active.
 
 ## Current implementation notes and limitations
 
 - This repository already contained the BeforeTheFall survival implementation (radiation dose, fallout/water zones, ash storm, bunker, mask/filter, dosimeter, nuclear charge, suit, recipes and commands). This branch migrates custom item visuals to Paper/Minecraft 1.21.4 `ItemModel` definitions and adds the dosimeter crafting recipe.
-- The original uploaded Blockbench files and HUD/audio uploads must be present in the asset folders above before the generated pack can include them. Do not assume a successful plugin compile alone proves all custom visuals are packaged.
-- The current gas mask is a plugin-tagged leather helmet. Its existing gameplay durability/filter logic is retained; its visor-state models are selected through item-model identifiers.
+- The five Blockbench source models are kept in `src/main/resources/blockbench/` (and the model-export input folder). The three visor PNGs are under `src/main/resources/atomic-assets/textures/gui/`; blast OGG assets are under `src/main/resources/atomic-assets/gas-mask/sounds/blast/`. The build exports the models and embedded textures and copies the supplied overlay/sound assets into the resource pack. CI checks the generated pack contents.
+- The current gas mask is a plugin-tagged leather helmet with an `ItemModel`, an `EquippableComponent` head slot and camera overlay. Its gameplay durability/filter logic is retained; clean, fogged and cracked item/overlay variants are selected as the condition changes.
 - `EquippableComponent` does not turn arbitrary Blockbench free-format geometry into wearable armor geometry. Wearable equipment assets use Minecraft's equipment/armor asset format; arbitrary multi-cube models need a display-entity approach or a client mod.
 - The terrain/blast systems are destructive. Test with backups and region protection enabled. Large-radius world edits should be throttled and tested under realistic player/chunk load.
 - This project is a native Paper plugin, not a Forge mod or a client-side mod.
