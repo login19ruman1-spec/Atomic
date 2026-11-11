@@ -24,17 +24,18 @@ ash-storm:
 nuclear-blast:
   default-power: 18.0
   destroy-blocks: true
-  block-radius: 90
-  vertical-destruction-radius: 160
-  block-edits-per-tick: 5000
+  block-radius: 20
+  vertical-destruction-radius: 24
+  block-edits-per-tick: 300
   shockwave-radius-per-power: 14.0
   fallout-intensity: 100.0
-  fallout-radius: 3000.0
-  fallout-propagation-radius: 3000.0
+  fallout-radius: 1500.0
+  fallout-propagation-radius: 1500.0
   fallout-duration-hours: 72
-  distant-sound-radius: 3000.0
-  shock-sound-radius: 2000.0
-  close-sound-radius: 50.0
+  distant-sound-radius: 500.0
+  shock-sound-radius: 500.0
+  close-sound-radius: 500.0
+  shockwave-delay-ticks: 30
   placed-charges: []
 gas-mask:
   filter-duration-seconds: 600
@@ -46,8 +47,8 @@ bunkers:
 aftermath:
   dark-sky: true
   dark-sky-days: 3
-  water-radius: 3000.0
-  water-contamination-radius: 3000.0
+  water-radius: 900.0
+  water-contamination-radius: 900.0
   terrain-radius: 900.0
   contamination-hours: 72
 resource-pack:
