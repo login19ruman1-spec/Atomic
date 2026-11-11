@@ -206,6 +206,20 @@ The build generates the embedded resource pack and packages it into the plugin J
 
 The pack skins vanilla snow layers as ash while retaining their thin-layer collision and stacking. Vanilla snow layers share the ash texture while the pack is active.
 
+## Blast and aftermath defaults
+
+The branch defaults are tuned to the requested station scale:
+
+- Crater/block destruction radius: **20 blocks**, processed in batches of **300 block edits per tick**.
+- Secondary bursts: **8–12** small bursts in the **25–32 block** ring, scheduled with **1–3 tick** delays.
+- Main blast sound: up to **500 blocks**; players below Y=60 or with zero sky light receive the muffled layer.
+- Shockwave sound: delayed by **30 ticks (1.5 seconds)**, with reduced volume, up to 500 blocks.
+- Fallout propagation radius: **1,500 blocks**.
+- Water contamination and terrain aftermath radius: **900 blocks**.
+- Gas-mask filter: **10 minutes of wall-clock time**, so low TPS does not extend cartridge life.
+
+These are configurable in `plugins/BeforeTheFall/config.yml`. Always test destructive behavior on a copied world first.
+
 ## Current implementation notes and limitations
 
 - This repository already contained the BeforeTheFall survival implementation (radiation dose, fallout/water zones, ash storm, bunker, mask/filter, dosimeter, nuclear charge, suit, recipes and commands). This branch migrates custom item visuals to Paper/Minecraft 1.21.4 `ItemModel` definitions and adds the dosimeter crafting recipe.
