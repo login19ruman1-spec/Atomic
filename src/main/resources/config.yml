@@ -25,7 +25,7 @@ nuclear-blast:
   default-power: 18.0
   destroy-blocks: true
   block-radius: 90
-  vertical-destruction-radius: 110
+  vertical-destruction-radius: 160
   block-edits-per-tick: 5000
   shockwave-radius-per-power: 14.0
   fallout-intensity: 100.0
