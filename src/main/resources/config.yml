@@ -10,6 +10,7 @@ radiation:
   contaminated-water-reading: 4.0
   gas-mask-inhalation-factor: 0.12
   full-suit-factor: 0.45
+  mob-lethal-threshold: 4.0
   zones: []
   fallout-zones: []
 ash-storm:
@@ -23,14 +24,17 @@ ash-storm:
 nuclear-blast:
   default-power: 18.0
   destroy-blocks: true
-  block-radius: 25
+  block-radius: 90
+  vertical-destruction-radius: 110
+  block-edits-per-tick: 5000
+  shockwave-radius-per-power: 14.0
   fallout-intensity: 100.0
   fallout-radius: 3000.0
   fallout-propagation-radius: 3000.0
   fallout-duration-hours: 72
-  distant-sound-radius: 3000.0
-  shock-sound-radius: 2000.0
-  close-sound-radius: 50.0
+  distant-sound-radius: 4000.0
+  shock-sound-radius: 2500.0
+  close-sound-radius: 75.0
   placed-charges: []
 gas-mask:
   filter-duration-seconds: 900
@@ -54,3 +58,8 @@ messages:
   player-only: '&cЭта команда доступна только игроку.'
   ash-started: '&eПепельная буря началась.'
   ash-stopped: '&aПепельная буря закончилась.'
+
+acid-rain:
+  damage-per-interval: 1.0
+  dose-per-interval: 0.15
+  mob-damage-per-interval: 0.5
