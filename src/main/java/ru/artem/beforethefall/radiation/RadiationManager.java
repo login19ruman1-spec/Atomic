@@ -42,15 +42,32 @@ public final class RadiationManager {
         return doses.getOrDefault(player.getUniqueId(), 0.0);
     }
 
+    /** Ambient radiation at an arbitrary entity location. */
+    public double getAmbientLevel(Location location) {
+        if (location == null || location.getWorld() == null || isProtectedByBunker(location)) return 0.0;
+        return radiationAt(location);
+    }
+
     /** Instant local reading, including contaminated water when the player is immersed in it. */
     public double getAmbientLevel(Player player) {
-        Location location = player.getLocation();
-        if (isProtectedByBunker(location)) return 0.0;
-        double level = radiationAt(location);
+        double level = getAmbientLevel(player.getLocation());
         if (isInContaminatedWater(player)) {
             level += plugin.getConfig().getDouble("radiation.contaminated-water-reading", 4.0);
         }
         return level;
+    }
+
+    /** Protective suits are overwhelmed in the immediate blast core. */
+    public boolean isAtBlastCore(Location location) {
+        if (location == null || location.getWorld() == null) return false;
+        for (FalloutZone zone : fallout) {
+            if (!zone.world.equals(location.getWorld().getUID())) continue;
+            double dx = location.getX() - zone.x;
+            double dy = location.getY() - zone.y;
+            double dz = location.getZ() - zone.z;
+            if (dx * dx + dy * dy + dz * dz <= 50.0 * 50.0) return true;
+        }
+        return false;
     }
 
     public boolean isInContaminatedWater(Player player) {
@@ -189,6 +206,7 @@ public final class RadiationManager {
                     ? plugin.getConfig().getDouble("radiation.gas-mask-inhalation-factor", 0.12) : 1.0;
             double suitFactor = plugin.getProtectiveSuitManager() != null
                     && plugin.getProtectiveSuitManager().hasFullSuit(player)
+                    && !isAtBlastCore(location)
                     ? plugin.getConfig().getDouble("radiation.full-suit-factor", 0.45) : 1.0;
 
             double intake = airborne * inhalationFactor * suitFactor;
