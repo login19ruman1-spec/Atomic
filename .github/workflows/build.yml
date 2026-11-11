@@ -36,7 +36,7 @@ jobs:
           unzip -t build/resourcepack.zip
           unzip -l build/resourcepack.zip | grep -E 'assets/beforethefall/models/item/(nuclear_bomb|nuclear_explosion|gas_mask|gas_filter).json'
           unzip -l build/resourcepack.zip | grep -E 'assets/beforethefall/textures/item/(nuclear_bomb|nuclear_explosion|gas_mask|gas_filter).png'
-          unzip -l build/resourcepack.zip | grep -E 'assets/minecraft/models/item/(tnt|firework_star|leather_helmet|paper).json'
+          unzip -l build/resourcepack.zip | grep -E 'assets/minecraft/models/item/(tnt|firework_star|carved_pumpkin|paper).json'
       - name: Publish resource pack for automatic client download
         uses: softprops/action-gh-release@v2
         with:
