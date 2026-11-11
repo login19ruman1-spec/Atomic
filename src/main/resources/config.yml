@@ -23,6 +23,7 @@ ash-storm:
   deposit-radius: 18
 nuclear-blast:
   default-power: 18.0
+  countdown-seconds: 10
   destroy-blocks: true
   block-radius: 20
   vertical-destruction-radius: 24
