@@ -208,7 +208,7 @@ public final class NuclearBlastManager {
         // Use the actual supplied Blockbench nuclear_explosion model, not a particle placeholder.
         ItemStack sprite = new ItemStack(Material.FIREWORK_STAR);
         ItemMeta meta = sprite.getItemMeta();
-        meta.setCustomModelData(6);
+        meta.setItemModel(new NamespacedKey(plugin, "nuclear_explosion"));
         sprite.setItemMeta(meta);
         ItemDisplay display = world.spawn(center.clone().add(0, 8, 0), ItemDisplay.class);
         display.setItemStack(sprite);
