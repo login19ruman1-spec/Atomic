@@ -37,7 +37,7 @@ nuclear-blast:
   close-sound-radius: 50.0
   placed-charges: []
 gas-mask:
-  filter-duration-seconds: 900
+  filter-duration-seconds: 600
 bunkers:
   radius: 12
   depth: 12
