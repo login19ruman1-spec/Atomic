@@ -157,6 +157,18 @@ public final class RadiationManager {
                 plugin.getLogger().warning("Skipping malformed contaminated-water zone.");
             }
         }
+        // Migrate the previous single-zone water contamination format.
+        ConfigurationSection legacyWater = plugin.getConfig().getConfigurationSection("radiation.water-contamination");
+        if (legacyWater != null && legacyWater.getLong("expires-at") > System.currentTimeMillis()) {
+            try {
+                waterZones.add(new WaterZone(UUID.fromString(legacyWater.getString("world")),
+                        legacyWater.getDouble("x"), legacyWater.getDouble("z"),
+                        Math.max(1.0, legacyWater.getDouble("radius")),
+                        legacyWater.getLong("expires-at")));
+            } catch (RuntimeException ignored) {
+                plugin.getLogger().warning("Skipping legacy contaminated-water zone.");
+            }
+        }
     }
 
     private void tick() {
