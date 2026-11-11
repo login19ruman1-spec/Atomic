@@ -55,7 +55,7 @@ public final class NuclearBlastManager {
         spawnTexturedBlast(world, center, p);
         aftermath.apply(center);
         radiation.addFalloutZone(center, plugin.getConfig().getDouble("nuclear-blast.fallout-intensity", 100.0),
-                plugin.getConfig().getDouble("nuclear-blast.fallout-radius", 400.0),
+                plugin.getConfig().getDouble("nuclear-blast.fallout-propagation-radius", 3000.0),
                 20L * 60L * 60L * plugin.getConfig().getLong("nuclear-blast.fallout-duration-hours", 72L));
 
         new BukkitRunnable() {
