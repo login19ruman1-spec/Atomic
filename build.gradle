@@ -40,6 +40,10 @@ tasks.register('generateAtomicResourcePack') {
   def bbFiles=bbDirs.findAll { it.exists() }
       .collectMany { dir -> dir.listFiles({f->f.name.endsWith('.bbmodel')} as java.io.FileFilter).toList() }
       .groupBy { it.name }.collect { name, matches -> matches[0] }
+  def requiredOwnerModels=['gas_mask','gas_filter','nuclear_bomb','nuclear_explosion','dosimeter'] as Set
+  def availableOwnerModels=bbFiles.collect { f -> new groovy.json.JsonSlurper().parse(f).name.toString() } as Set
+  def missingOwnerModels=requiredOwnerModels.findAll { !availableOwnerModels.contains(it) }
+  if(!missingOwnerModels.isEmpty()) throw new GradleException("Missing owner-supplied Blockbench models: "+missingOwnerModels.join(', '))
   if(!bbFiles.isEmpty()) {
    bbFiles.each { bb ->
     def data=new groovy.json.JsonSlurper().parse(bb)
