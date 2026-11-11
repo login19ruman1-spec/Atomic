@@ -7,6 +7,9 @@ public final class GasMaskManager implements Listener {
  public ItemStack createMask(){ItemStack item=new ItemStack(Material.LEATHER_HELMET);ItemMeta meta=item.getItemMeta();meta.setDisplayName(ChatColor.DARK_GREEN+"Противогаз");meta.setItemModel(new NamespacedKey(plugin, "gas_mask"));
   EquippableComponent equip = meta.getEquippable();
   equip.setSlot(EquipmentSlot.HEAD);
+  equip.setDamageOnHurt(false);
+  equip.setDispensable(false);
+  equip.setSwappable(false);
   equip.setCameraOverlay(new NamespacedKey(plugin, "gui/gasmask_overlay"));
   meta.setEquippable(equip);meta.setLore(List.of(ChatColor.GRAY+"Защита от радиоактивной пыли и пепла",ChatColor.GRAY+"Прочность: 100%",ChatColor.GRAY+"Сменный фильтр: "+plugin.getConfig().getInt("gas-mask.filter-duration-seconds",900)+" секунд",ChatColor.YELLOW+"Надень в слот шлема"));meta.getPersistentDataContainer().set(marker,PersistentDataType.BYTE,(byte)1);meta.getPersistentDataContainer().set(filterExpiry,PersistentDataType.LONG,0L);meta.getPersistentDataContainer().set(maskDurability,PersistentDataType.INTEGER,MAX_DURABILITY);item.setItemMeta(meta);return item;}
  public ItemStack createFilter(){ItemStack item=new ItemStack(Material.PAPER);ItemMeta meta=item.getItemMeta();meta.setDisplayName(ChatColor.GREEN+"Сменный фильтр");meta.setItemModel(new NamespacedKey(plugin, "gas_filter"));meta.setLore(List.of(ChatColor.GRAY+"Картридж для противогаза",ChatColor.GRAY+"Ресурс: "+plugin.getConfig().getInt("gas-mask.filter-duration-seconds",900)+" секунд"));meta.getPersistentDataContainer().set(filterItem,PersistentDataType.BYTE,(byte)1);item.setItemMeta(meta);return item;}
