@@ -147,14 +147,21 @@ public final class NuclearBlastManager {
                     float[] base = original.get(player.getUniqueId());
                     if (base == null) continue;
                     double distance = player.getLocation().distance(center);
-                    if (distance > 3000.0) continue;
-                    double strength = distance <= 50 ? 5.0 : distance <= 2000 ? 2.2 : 0.8;
+                    if (distance > plugin.getConfig().getDouble("nuclear-blast.distant-sound-radius", 3000.0)) continue;
+                    double closeRadius = plugin.getConfig().getDouble("nuclear-blast.close-sound-radius", 50.0);
+                    double waveRadius = plugin.getConfig().getDouble("nuclear-blast.shock-sound-radius", 2000.0);
+                    double distantRadius = plugin.getConfig().getDouble("nuclear-blast.distant-sound-radius", 3000.0);
+                    // Camera shake follows the three audible blast layers: the pressure wave
+                    // is stronger than the distant rumble, while the near-field detonation is strongest.
+                    double strength = distance <= closeRadius ? 7.0
+                            : distance <= waveRadius ? 3.5
+                            : distance <= distantRadius ? 1.15 : 0.0;
                     if (plugin.getBunkerManager() != null && plugin.getBunkerManager().isProtected(player.getLocation())) strength *= 0.15;
                     ThreadLocalRandom random = ThreadLocalRandom.current();
                     float yaw = (float)(Math.sin(tick * 0.8) * strength + random.nextDouble(-strength, strength));
                     float pitch = (float)(Math.cos(tick * 0.65) * strength * .45 + random.nextDouble(-strength * .45, strength * .45));
                     player.setRotation(base[0] + yaw, Math.max(-90f, Math.min(90f, base[1] + pitch)));
-                    if (tick % 10 == 0) player.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA, 25, distance <= 50 ? 2 : 0, true, false, true));
+                    if (tick % 10 == 0) player.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA, 25, distance <= closeRadius ? 2 : distance <= waveRadius ? 1 : 0, true, false, true));
                 }
                 if (tick >= 160) {
                     for (Player player : world.getPlayers()) {
