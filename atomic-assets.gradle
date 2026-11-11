@@ -75,6 +75,13 @@ tasks.named('generateAtomicResourcePack') {
                 soundsJson[eventName] = [sounds: [[name: "beforethefall:" + soundPath, stream: true]]]
             }
         }
+        // Extend the positional blast layers to the configured 500-block listening radius.
+        ['blast_close', 'blast_distant', 'blast_wave'].each { eventName ->
+            if (soundsJson.containsKey(eventName)) {
+                soundsJson[eventName].attenuation_distance = 500
+            }
+        }
+
         if (!soundsJson.isEmpty()) {
             def soundJsonFile = new File(packRoot, 'assets/beforethefall/sounds.json')
             soundJsonFile.parentFile.mkdirs()
