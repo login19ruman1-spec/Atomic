@@ -11,148 +11,262 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 import ru.artem.beforethefall.BeforeTheFallPlugin;
+
 import java.util.*;
 
 public final class RadiationManager {
     private final BeforeTheFallPlugin plugin;
     private final Map<UUID, Double> doses = new HashMap<>();
     private final List<FalloutZone> fallout = new ArrayList<>();
+    private final List<WaterZone> waterZones = new ArrayList<>();
     private BukkitTask task;
     private long ticks;
 
-    public RadiationManager(BeforeTheFallPlugin plugin) { this.plugin = plugin; load(); }
+    public RadiationManager(BeforeTheFallPlugin plugin) {
+        this.plugin = plugin;
+        load();
+    }
+
     public void start() {
         if (!plugin.getConfig().getBoolean("radiation.enabled", true)) return;
         long interval = Math.max(20L, plugin.getConfig().getLong("radiation.tick-interval", 40L));
         task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, interval, interval);
     }
-    public void reload() { if (task != null) task.cancel(); start(); }
-    public double get(Player player) { return doses.getOrDefault(player.getUniqueId(), 0.0); }
-    /** Current local radiation intensity, as measured by the dosimeter. */
+
+    public void reload() {
+        if (task != null) task.cancel();
+        start();
+    }
+
+    public double get(Player player) {
+        return doses.getOrDefault(player.getUniqueId(), 0.0);
+    }
+
+    /** Instant local reading, including contaminated water when the player is immersed in it. */
     public double getAmbientLevel(Player player) {
         Location location = player.getLocation();
-        boolean bunker = plugin.getBunkerManager() != null && plugin.getBunkerManager().isProtected(location);
-        return bunker ? 0.0 : radiationAt(location);
+        if (isProtectedByBunker(location)) return 0.0;
+        double level = radiationAt(location);
+        if (isInContaminatedWater(player)) {
+            level += plugin.getConfig().getDouble("radiation.contaminated-water-reading", 4.0);
+        }
+        return level;
     }
-    public void set(Player player, double value) { doses.put(player.getUniqueId(), clamp(value)); applySymptoms(player); }
-    public void add(Player player, double value) { set(player, get(player) + value); }
 
-    /** Creates a persistent radioactive fallout source centered on a detonation. */
+    public boolean isInContaminatedWater(Player player) {
+        Location loc = player.getLocation();
+        boolean wet = isWater(loc.getBlock().getType())
+                || isWater(player.getEyeLocation().getBlock().getType())
+                || isWater(loc.clone().subtract(0, 1, 0).getBlock().getType());
+        if (!wet) return false;
+        long now = System.currentTimeMillis();
+        for (WaterZone zone : waterZones) {
+            if (zone.expiresAt <= now || !zone.world.equals(loc.getWorld().getUID())) continue;
+            double dx = loc.getX() - zone.x;
+            double dz = loc.getZ() - zone.z;
+            if (dx * dx + dz * dz <= zone.radius * zone.radius) return true;
+        }
+        return false;
+    }
+
+    private boolean isWater(Material material) {
+        return material == Material.WATER || material == Material.BUBBLE_COLUMN;
+    }
+
+    public void set(Player player, double value) {
+        doses.put(player.getUniqueId(), clamp(value));
+        applySymptoms(player);
+    }
+
+    public void add(Player player, double value) {
+        set(player, get(player) + value);
+    }
+
     public void addFalloutZone(Location center, double intensity, double radius, long durationTicks) {
         if (center.getWorld() == null) return;
         fallout.add(new FalloutZone(center.getWorld().getUID(), center.getX(), center.getY(), center.getZ(),
-                Math.max(0.0, intensity), Math.max(1.0, radius), System.currentTimeMillis() + Math.max(0L, durationTicks) * 50L));
-        saveFallout();
-        plugin.saveConfig();
+                Math.max(0.0, intensity), Math.max(1.0, radius),
+                System.currentTimeMillis() + Math.max(0L, durationTicks) * 50L));
+        save();
+    }
+
+    public void contaminateWater(Location center, double radius, long durationTicks) {
+        if (center.getWorld() == null) return;
+        waterZones.add(new WaterZone(center.getWorld().getUID(), center.getX(), center.getZ(),
+                Math.max(1.0, radius), System.currentTimeMillis() + Math.max(0L, durationTicks) * 50L));
+        save();
     }
 
     public void save() {
-        for (Map.Entry<UUID, Double> entry : doses.entrySet())
+        for (Map.Entry<UUID, Double> entry : doses.entrySet()) {
             plugin.getConfig().set("player-data." + entry.getKey() + ".radiation", entry.getValue());
-        saveFallout();
-        plugin.saveConfig();
-    }
-    private void load() {
-        ConfigurationSection section = plugin.getConfig().getConfigurationSection("player-data");
-        if (section != null) for (String key : section.getKeys(false)) {
-            try { doses.put(UUID.fromString(key), clamp(section.getDouble(key + ".radiation", 0.0))); }
-            catch (IllegalArgumentException ignored) { plugin.getLogger().warning("Skipping invalid player UUID: " + key); }
         }
-        for (Map<?, ?> z : plugin.getConfig().getMapList("radiation.fallout-zones")) {
-            try {
-                UUID world = UUID.fromString(String.valueOf(z.get("world")));
-                fallout.add(new FalloutZone(world, num(z.get("x")), num(z.get("y")), num(z.get("z")),
-                    num(z.get("intensity")), Math.max(1.0, num(z.get("radius"))), (long)num(z.get("expires-at"))));
-            } catch (RuntimeException ignored) { plugin.getLogger().warning("Skipping malformed fallout zone."); }
-        }
-    }
-    private void saveFallout() {
-        List<Map<String,Object>> values = new ArrayList<>();
         long now = System.currentTimeMillis();
-        for (FalloutZone z : fallout) if (z.expiresAt > now) {
-            Map<String,Object> m = new LinkedHashMap<>();
-            m.put("world",z.world.toString());m.put("x",z.x);m.put("y",z.y);m.put("z",z.z);
-            m.put("intensity",z.intensity);m.put("radius",z.radius);m.put("expires-at",z.expiresAt);values.add(m);
+        List<Map<String, Object>> falloutValues = new ArrayList<>();
+        for (FalloutZone zone : fallout) {
+            if (zone.expiresAt <= now) continue;
+            Map<String, Object> value = new LinkedHashMap<>();
+            value.put("world", zone.world.toString());
+            value.put("x", zone.x); value.put("y", zone.y); value.put("z", zone.z);
+            value.put("intensity", zone.intensity); value.put("radius", zone.radius);
+            value.put("expires-at", zone.expiresAt);
+            falloutValues.add(value);
         }
-        plugin.getConfig().set("radiation.fallout-zones", values);
-    }
-    public void contaminateWater(Location center, double radius, long durationTicks) {
-        if (center.getWorld() == null) return;
-        plugin.getConfig().set("radiation.water-contamination.world", center.getWorld().getUID().toString());
-        plugin.getConfig().set("radiation.water-contamination.x", center.getX());
-        plugin.getConfig().set("radiation.water-contamination.z", center.getZ());
-        plugin.getConfig().set("radiation.water-contamination.radius", radius);
-        plugin.getConfig().set("radiation.water-contamination.expires-at", System.currentTimeMillis() + durationTicks * 50L);
+        plugin.getConfig().set("radiation.fallout-zones", falloutValues);
+
+        List<Map<String, Object>> waterValues = new ArrayList<>();
+        for (WaterZone zone : waterZones) {
+            if (zone.expiresAt <= now) continue;
+            Map<String, Object> value = new LinkedHashMap<>();
+            value.put("world", zone.world.toString());
+            value.put("x", zone.x); value.put("z", zone.z);
+            value.put("radius", zone.radius); value.put("expires-at", zone.expiresAt);
+            waterValues.add(value);
+        }
+        plugin.getConfig().set("radiation.water-zones", waterValues);
         plugin.saveConfig();
     }
 
-    private boolean isInContaminatedWater(Player player) {
-        Location loc = player.getLocation();
-        boolean wet = loc.getBlock().getType() == Material.WATER || player.getEyeLocation().getBlock().getType() == Material.WATER
-                || loc.clone().subtract(0, 1, 0).getBlock().getType() == Material.WATER;
-        if (!wet) return false;
-        var section = plugin.getConfig().getConfigurationSection("radiation.water-contamination");
-        if (section == null || section.getLong("expires-at") <= System.currentTimeMillis()) return false;
-        if (!loc.getWorld().getUID().toString().equals(section.getString("world"))) return false;
-        double dx = loc.getX() - section.getDouble("x"), dz = loc.getZ() - section.getDouble("z");
-        double radius = section.getDouble("radius", 0.0);
-        return dx * dx + dz * dz <= radius * radius;
+    private void load() {
+        ConfigurationSection section = plugin.getConfig().getConfigurationSection("player-data");
+        if (section != null) {
+            for (String key : section.getKeys(false)) {
+                try {
+                    doses.put(UUID.fromString(key), clamp(section.getDouble(key + ".radiation", 0.0)));
+                } catch (IllegalArgumentException ignored) {
+                    plugin.getLogger().warning("Skipping invalid player UUID: " + key);
+                }
+            }
+        }
+        for (Map<?, ?> value : plugin.getConfig().getMapList("radiation.fallout-zones")) {
+            try {
+                fallout.add(new FalloutZone(UUID.fromString(String.valueOf(value.get("world"))),
+                        num(value.get("x")), num(value.get("y")), num(value.get("z")),
+                        num(value.get("intensity")), Math.max(1.0, num(value.get("radius"))),
+                        (long) num(value.get("expires-at"))));
+            } catch (RuntimeException ignored) {
+                plugin.getLogger().warning("Skipping malformed fallout zone.");
+            }
+        }
+        for (Map<?, ?> value : plugin.getConfig().getMapList("radiation.water-zones")) {
+            try {
+                waterZones.add(new WaterZone(UUID.fromString(String.valueOf(value.get("world"))),
+                        num(value.get("x")), num(value.get("z")), Math.max(1.0, num(value.get("radius"))),
+                        (long) num(value.get("expires-at"))));
+            } catch (RuntimeException ignored) {
+                plugin.getLogger().warning("Skipping malformed contaminated-water zone.");
+            }
+        }
     }
 
     private void tick() {
         ticks++;
         long now = System.currentTimeMillis();
-        boolean removedZones = fallout.removeIf(z -> z.expiresAt <= now);
-        if (removedZones) save();
+        boolean expired = fallout.removeIf(zone -> zone.expiresAt <= now);
+        expired |= waterZones.removeIf(zone -> zone.expiresAt <= now);
+
         double decay = Math.max(0.0, plugin.getConfig().getDouble("radiation.decay-per-tick", 0.025));
         for (Player player : Bukkit.getOnlinePlayers()) {
-            Location loc = player.getLocation();
-            boolean bunker = plugin.getBunkerManager() != null && plugin.getBunkerManager().isProtected(loc);
-            double source = bunker ? 0.0 : radiationAt(loc);
-            // A gas-mask filter blocks inhaled radioactive dust, not penetrating gamma radiation.
-            double inhalationFactor = plugin.getGasMaskManager().isProtected(player) ? 0.18 : 1.0;
-            double suitFactor = plugin.getProtectiveSuitManager() != null && plugin.getProtectiveSuitManager().hasFullSuit(player) ? 0.45 : 1.0;
-            double intake = source * inhalationFactor * suitFactor;
-            if (!bunker && isInContaminatedWater(player)) intake += plugin.getConfig().getDouble("radiation.contaminated-water-intake", 2.5);
-            double oldDose = get(player);
-            double next = Math.max(0.0, oldDose - decay) + intake;
+            Location location = player.getLocation();
+            boolean bunker = isProtectedByBunker(location);
+            double airborne = bunker ? 0.0 : radiationAt(location);
+
+            // A sealed filter reduces inhaled radioactive dust. It does not stop gamma radiation
+            // or contamination taken in through water.
+            double inhalationFactor = plugin.getGasMaskManager().isProtected(player)
+                    ? plugin.getConfig().getDouble("radiation.gas-mask-inhalation-factor", 0.12) : 1.0;
+            double suitFactor = plugin.getProtectiveSuitManager() != null
+                    && plugin.getProtectiveSuitManager().hasFullSuit(player)
+                    ? plugin.getConfig().getDouble("radiation.full-suit-factor", 0.45) : 1.0;
+
+            double intake = airborne * inhalationFactor * suitFactor;
+            if (!bunker && isInContaminatedWater(player)) {
+                intake += plugin.getConfig().getDouble("radiation.contaminated-water-intake", 1.25);
+            }
+
+            double next = Math.max(0.0, get(player) - decay) + intake;
             doses.put(player.getUniqueId(), clamp(next));
+
             if (intake > 0.01 && ticks % 2 == 0) {
-                World w = player.getWorld();
-                w.spawnParticle(Particle.WITCH, loc.clone().add(0, 1.0, 0), 2, .25, .35, .25, .01);
+                player.getWorld().spawnParticle(Particle.ASH,
+                        location.clone().add(0, 1.0, 0), 2, .25, .35, .25, .005);
             }
             applySymptoms(player);
         }
-        // Persist player doses periodically, not on every gameplay tick.
-        if (ticks % 150 == 0) save();
+
+        if (expired || ticks % 150 == 0) save();
     }
-    private double radiationAt(Location loc) {
+
+    private boolean isProtectedByBunker(Location location) {
+        return plugin.getBunkerManager() != null && plugin.getBunkerManager().isProtected(location);
+    }
+
+    private double radiationAt(Location location) {
         double result = 0.0;
         for (Map<?, ?> zone : plugin.getConfig().getMapList("radiation.zones")) {
-            if (!loc.getWorld().getName().equals(String.valueOf(zone.get("world")))) continue;
-            double dx=loc.getX()-num(zone.get("x")),dy=loc.getY()-num(zone.get("y")),dz=loc.getZ()-num(zone.get("z"));
-            double radius=Math.max(1.0,num(zone.get("radius"))),d2=dx*dx+dy*dy+dz*dz;
-            if(d2<=radius*radius) result=Math.max(result,num(zone.get("level"))/(1.0+d2/64.0));
+            if (!location.getWorld().getName().equals(String.valueOf(zone.get("world")))) continue;
+            double dx = location.getX() - num(zone.get("x"));
+            double dy = location.getY() - num(zone.get("y"));
+            double dz = location.getZ() - num(zone.get("z"));
+            double radius = Math.max(1.0, num(zone.get("radius")));
+            double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            if (distance > radius) continue;
+            double remaining = 1.0 - distance / radius;
+            result += num(zone.get("level")) * (0.08 + 0.92 * Math.pow(remaining, 1.35));
         }
-        for(FalloutZone z:fallout) if(z.world.equals(loc.getWorld().getUID())) {
-            double dx=loc.getX()-z.x,dy=loc.getY()-z.y,dz=loc.getZ()-z.z,d2=dx*dx+dy*dy+dz*dz;
-            if(d2<=z.radius*z.radius) result+=z.intensity/(1.0+d2/100.0);
+
+        for (FalloutZone zone : fallout) {
+            if (!zone.world.equals(location.getWorld().getUID())) continue;
+            double dx = location.getX() - zone.x;
+            double dy = location.getY() - zone.y;
+            double dz = location.getZ() - zone.z;
+            double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            if (distance > zone.radius) continue;
+            double remaining = 1.0 - distance / zone.radius;
+            // Broad fallout plume: still measurable near the edge of the 3 km contaminated area.
+            result += zone.intensity * (0.08 + 0.92 * Math.pow(remaining, 1.35));
         }
         return result * plugin.getConfig().getDouble("radiation.intake-scale", 0.12);
     }
-    private double num(Object o){return o instanceof Number n?n.doubleValue():0.0;}
-    private void applySymptoms(Player p) {
-        double v=get(p);
-        if(v>=90){p.addPotionEffect(new PotionEffect(PotionEffectType.WITHER,100,1,true,false,true));p.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA,100,1,true,false,true));p.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS,100,1,true,false,true));}
-        else if(v>=75){p.addPotionEffect(new PotionEffect(PotionEffectType.POISON,100,0,true,false,true));p.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA,100,1,true,false,true));p.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS,100,1,true,false,true));}
-        else if(v>=50){p.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA,100,0,true,false,true));p.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS,100,0,true,false,true));p.addPotionEffect(new PotionEffect(PotionEffectType.HUNGER,100,1,true,false,true));}
-        else if(v>=25){p.addPotionEffect(new PotionEffect(PotionEffectType.HUNGER,100,0,true,false,true));}
-        else { p.removePotionEffect(PotionEffectType.HUNGER); p.removePotionEffect(PotionEffectType.NAUSEA); }
-        if(v<50) p.removePotionEffect(PotionEffectType.WEAKNESS);
-        if(v<75) p.removePotionEffect(PotionEffectType.POISON);
-        if(v<90) { p.removePotionEffect(PotionEffectType.WITHER); p.removePotionEffect(PotionEffectType.SLOWNESS); }
-        if(v>=90 && ticks%3==0)p.damage(1.0);
+
+    private double num(Object value) {
+        return value instanceof Number number ? number.doubleValue() : 0.0;
     }
-    private double clamp(double v){return Math.max(0.0,Math.min(100.0,v));}
-    private record FalloutZone(UUID world,double x,double y,double z,double intensity,double radius,long expiresAt){}
+
+    private void applySymptoms(Player player) {
+        double dose = get(player);
+        if (dose >= 90) {
+            player.addPotionEffect(new PotionEffect(PotionEffectType.WITHER, 100, 1, true, false, true));
+            player.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA, 100, 1, true, false, true));
+            player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 100, 1, true, false, true));
+        } else if (dose >= 75) {
+            player.addPotionEffect(new PotionEffect(PotionEffectType.POISON, 100, 0, true, false, true));
+            player.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA, 100, 1, true, false, true));
+            player.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS, 100, 1, true, false, true));
+        } else if (dose >= 50) {
+            player.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA, 100, 0, true, false, true));
+            player.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS, 100, 0, true, false, true));
+            player.addPotionEffect(new PotionEffect(PotionEffectType.HUNGER, 100, 1, true, false, true));
+        } else if (dose >= 25) {
+            player.addPotionEffect(new PotionEffect(PotionEffectType.HUNGER, 100, 0, true, false, true));
+        } else {
+            player.removePotionEffect(PotionEffectType.HUNGER);
+            player.removePotionEffect(PotionEffectType.NAUSEA);
+        }
+        if (dose < 50) player.removePotionEffect(PotionEffectType.WEAKNESS);
+        if (dose < 75) player.removePotionEffect(PotionEffectType.POISON);
+        if (dose < 90) {
+            player.removePotionEffect(PotionEffectType.WITHER);
+            player.removePotionEffect(PotionEffectType.SLOWNESS);
+        }
+        if (dose >= 90 && ticks % 3 == 0) player.damage(1.0);
+    }
+
+    private double clamp(double value) {
+        return Math.max(0.0, Math.min(100.0, value));
+    }
+
+    private record FalloutZone(UUID world, double x, double y, double z,
+                               double intensity, double radius, long expiresAt) { }
+    private record WaterZone(UUID world, double x, double z, double radius, long expiresAt) { }
 }
