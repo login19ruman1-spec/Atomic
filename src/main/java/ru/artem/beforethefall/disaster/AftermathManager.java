@@ -32,7 +32,7 @@ public final class AftermathManager implements Listener {
             world.setThunderDuration((int)Math.min(Integer.MAX_VALUE, days * 24000L));
         }
         if (plugin.getAshStormManager() != null) plugin.getAshStormManager().setActive(true);
-        radiation.contaminateWater(center, plugin.getConfig().getDouble("aftermath.water-radius", 1650.0),
+        radiation.contaminateWater(center, plugin.getConfig().getDouble("aftermath.water-contamination-radius", 3000.0),
             20L * 60L * 60L * plugin.getConfig().getLong("aftermath.contamination-hours", 72L));
         BlastSite site = new BlastSite(world.getUID(), center.getX(), center.getZ(),
             Math.max(1.0, plugin.getConfig().getDouble("aftermath.terrain-radius", 900.0)));
