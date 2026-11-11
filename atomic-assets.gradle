@@ -24,9 +24,25 @@ tasks.named('generateAtomicResourcePack') {
         copyAssetTree('gas-mask/textures', 'assets/beforethefall/textures/item')
         copyAssetTree('gas-mask/models', 'assets/beforethefall/models/item')
 
-        // Sound files are uploaded under sounds/, and exposed as stable sound event IDs.
+        // Copy uploaded audio bytes into the actual resource pack before it is zipped.
         def soundsDir = new File(atomicAssetsDir, 'sounds')
         def gasMaskSoundsDir = new File(atomicAssetsDir, 'gas-mask/sounds')
+        if (gasMaskSoundsDir.exists()) {
+            copy {
+                from gasMaskSoundsDir
+                include '**/*.ogg'
+                into new File(packRoot, 'assets/beforethefall/sounds')
+            }
+        }
+        if (soundsDir.exists()) {
+            copy {
+                from soundsDir
+                include '**/*.ogg'
+                into new File(packRoot, 'assets/beforethefall/sounds')
+            }
+        }
+
+        // Sound files are uploaded under sounds/, and exposed as stable sound event IDs.
         def soundEvents = [
             blast_close: 'blast/close',
             blast_wave: 'blast/wave',
@@ -83,5 +99,9 @@ tasks.named('generateAtomicResourcePack') {
             }
         }
         logger.lifecycle("Atomic custom assets copied: " + (uploaded.isEmpty() ? 'none yet' : uploaded.sort().join(', ')))
+
+        // IMPORTANT: zip only after every owner-supplied model, texture, sound and sounds.json
+        // has been copied into packRoot. Previously build.gradle zipped too early.
+        ant.zip(destfile: new File(packRoot.parentFile, 'resourcepack.zip'), basedir: packRoot)
     }
 }
