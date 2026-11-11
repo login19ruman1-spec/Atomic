@@ -20,7 +20,7 @@ public final class BeforeTheFallPlugin extends JavaPlugin {
   BeforeTheFallCommand executor=new BeforeTheFallCommand(this,radiationManager,ashStormManager,nuclearBlastManager); PluginCommand command=getCommand("beforethefall");
   if(command!=null){command.setExecutor(executor);command.setTabCompleter(executor);} getLogger().info("BeforeTheFall Atomic Survival enabled. Paper 1.21.4 / Java 21.");
  }
- @Override public void onDisable(){if(radiationManager!=null)radiationManager.save();if(ashStormManager!=null)ashStormManager.stop();if(gasMaskManager!=null)gasMaskManager.stop();}
+ @Override public void onDisable(){if(radiationManager!=null)radiationManager.save();if(ashStormManager!=null)ashStormManager.stop();if(gasMaskManager!=null)gasMaskManager.stop();if(dosimeterManager!=null)dosimeterManager.stop();}
  public GasMaskManager getGasMaskManager(){return gasMaskManager;} public ru.artem.beforethefall.equipment.ProtectiveSuitManager getProtectiveSuitManager(){return protectiveSuitManager;} public RadiationManager getRadiationManager(){return radiationManager;} public BunkerManager getBunkerManager(){return bunkerManager;} public ru.artem.beforethefall.equipment.DosimeterManager getDosimeterManager(){return dosimeterManager;} public AshStormManager getAshStormManager(){return ashStormManager;}
  public void openStormSettings(org.bukkit.entity.Player player){stormSettingsMenu.open(player);} public NuclearBlastManager getNuclearBlastManager(){return nuclearBlastManager;}
  public void reloadPluginConfig(){reloadConfig();if(radiationManager!=null)radiationManager.reload();if(ashStormManager!=null)ashStormManager.reload();}
