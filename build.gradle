@@ -113,7 +113,6 @@ tasks.register('generateAtomicResourcePack') {
   writeText('assets/minecraft/models/item/carved_pumpkin.json','{"parent":"minecraft:item/generated","textures":{"layer0":"minecraft:item/carved_pumpkin"},"overrides":[{"predicate":{"custom_model_data":21},"model":"beforethefall:item/gas_mask"},{"predicate":{"custom_model_data":22},"model":"beforethefall:item/gas_mask_cracked"},{"predicate":{"custom_model_data":23},"model":"beforethefall:item/gas_mask_fogged"},{"predicate":{"custom_model_data":24},"model":"beforethefall:item/gas_mask_cracked_fogged"}]}')
   writeText('assets/minecraft/models/item/paper.json','{"parent":"minecraft:item/generated","textures":{"layer0":"minecraft:item/paper"},"overrides":[{"predicate":{"custom_model_data":20},"model":"beforethefall:item/gas_filter"}]}')
   writeText('assets/minecraft/models/item/tnt.json','{"parent":"minecraft:item/generated","textures":{"layer0":"minecraft:item/tnt"},"overrides":[{"predicate":{"custom_model_data":3},"model":"beforethefall:item/nuclear_bomb"}]}')
-  ant.zip(destfile:new File(root.parentFile,'resourcepack.zip'),basedir:root)
  }
 }
 processResources.dependsOn tasks.named('generateAtomicResourcePack')
