@@ -135,7 +135,7 @@ public final class NuclearBlastManager {
         Map<UUID, float[]> original = new HashMap<>();
         for (Player player : world.getPlayers()) {
             double distance = player.getLocation().distance(center);
-            if (distance > 3000.0) continue;
+            if (distance > plugin.getConfig().getDouble("nuclear-blast.distant-sound-radius", 3000.0)) continue;
             Location view = player.getLocation();
             original.put(player.getUniqueId(), new float[]{view.getYaw(), view.getPitch()});
         }
