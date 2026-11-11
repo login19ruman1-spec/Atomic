@@ -13,7 +13,12 @@ import ru.artem.beforethefall.resourcepack.ResourcePackManager;
 public final class BeforeTheFallPlugin extends JavaPlugin {
  private RadiationManager radiationManager; private AshStormManager ashStormManager; private NuclearBlastManager nuclearBlastManager; private GasMaskManager gasMaskManager; private ru.artem.beforethefall.equipment.ProtectiveSuitManager protectiveSuitManager; private StormSettingsMenu stormSettingsMenu; private BunkerManager bunkerManager; private ru.artem.beforethefall.equipment.DosimeterManager dosimeterManager; private ru.artem.beforethefall.radiation.EnvironmentalHazardManager environmentalHazardManager;
  @Override public void onEnable() {
-  saveDefaultConfig(); protectiveSuitManager=new ru.artem.beforethefall.equipment.ProtectiveSuitManager(this); stormSettingsMenu=new StormSettingsMenu(this); getServer().getPluginManager().registerEvents(stormSettingsMenu,this);
+  saveDefaultConfig();
+  if (getConfig().getDouble("nuclear-blast.close-sound-radius", 75.0) == 75.0) getConfig().set("nuclear-blast.close-sound-radius", 50.0);
+  if (getConfig().getDouble("nuclear-blast.shock-sound-radius", 2500.0) == 2500.0) getConfig().set("nuclear-blast.shock-sound-radius", 2000.0);
+  if (getConfig().getDouble("nuclear-blast.distant-sound-radius", 4000.0) == 4000.0) getConfig().set("nuclear-blast.distant-sound-radius", 3000.0);
+  saveConfig();
+  protectiveSuitManager=new ru.artem.beforethefall.equipment.ProtectiveSuitManager(this); stormSettingsMenu=new StormSettingsMenu(this); getServer().getPluginManager().registerEvents(stormSettingsMenu,this);
   radiationManager=new RadiationManager(this); ashStormManager=new AshStormManager(this); gasMaskManager=new GasMaskManager(this); nuclearBlastManager=new NuclearBlastManager(this,radiationManager); bunkerManager=new BunkerManager(this); dosimeterManager=new ru.artem.beforethefall.equipment.DosimeterManager(this); environmentalHazardManager=new ru.artem.beforethefall.radiation.EnvironmentalHazardManager(this);
   getServer().getPluginManager().registerEvents(gasMaskManager,this); getServer().getPluginManager().registerEvents(new ru.artem.beforethefall.equipment.NuclearChargeListener(this),this); getServer().getPluginManager().registerEvents(bunkerManager,this); getServer().getPluginManager().registerEvents(dosimeterManager,this);dosimeterManager.start();getServer().getPluginManager().registerEvents(environmentalHazardManager,this);environmentalHazardManager.start(); getServer().getPluginManager().registerEvents(new ResourcePackManager(this),this);
   new SurvivalCraftingManager(this).register(); radiationManager.start(); ashStormManager.start(); gasMaskManager.start();
