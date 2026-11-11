@@ -54,6 +54,7 @@ public final class NuclearBlastManager {
         playGlobalSoundLayers(world, center);
         startEarthquake(world, center);
         spawnTexturedBlast(world, center, p);
+        scheduleSecondaryBursts(world, center);
         // Remove pre-existing loose drops in the immediate destruction zone.
         double cleanupRadius = plugin.getConfig().getDouble("nuclear-blast.block-radius", 90.0);
         for (org.bukkit.entity.Entity entity : world.getNearbyEntities(center, cleanupRadius, cleanupRadius, cleanupRadius)) {
@@ -102,6 +103,39 @@ public final class NuclearBlastManager {
                 if (tick > 80 && (destruction == null || destruction.isDone())) cancel();
             }
         }.runTaskTimer(plugin, 1L, 1L);
+    }
+
+    private void scheduleSecondaryBursts(World world, Location center) {
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        int bursts = random.nextInt(8, 13);
+        for (int i = 0; i < bursts; i++) {
+            double angle = random.nextDouble(0.0, Math.PI * 2.0);
+            double distance = random.nextDouble(25.0, 32.0);
+            Location burst = center.clone().add(
+                    Math.cos(angle) * distance,
+                    random.nextDouble(-2.0, 3.0),
+                    Math.sin(angle) * distance
+            );
+            long delay = random.nextLong(1L, 4L);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                world.spawnParticle(Particle.EXPLOSION_EMITTER, burst, 1);
+                world.spawnParticle(Particle.FLAME, burst, 18, 1.2, 0.7, 1.2, 0.04);
+                world.playSound(burst, Sound.ENTITY_GENERIC_EXPLODE,
+                        SoundCategory.BLOCKS, 2.0f, 0.65f);
+                for (Player target : world.getPlayers()) {
+                    if (target.getLocation().distanceSquared(burst) > 5.0 * 5.0) continue;
+                    if (plugin.getBunkerManager() != null
+                            && plugin.getBunkerManager().isProtected(target.getLocation())) continue;
+                    target.damage(6.0);
+                    target.setFireTicks(Math.max(target.getFireTicks(), 60));
+                }
+                Block fireBase = burst.getBlock();
+                if (fireBase.getType().isAir()
+                        && fireBase.getRelative(0, -1, 0).getType().isSolid()) {
+                    fireBase.setType(Material.FIRE, false);
+                }
+            }, delay);
+        }
     }
 
     private void playGlobalSoundLayers(World world, Location center) {
