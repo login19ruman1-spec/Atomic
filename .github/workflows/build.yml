@@ -34,12 +34,11 @@ jobs:
           JAR=$(find build/libs -name 'BeforeTheFall-Paper-*.jar' -print -quit)
           unzip -p "$JAR" resourcepack.zip > build/resourcepack.zip
           unzip -t build/resourcepack.zip
+          unzip -l build/resourcepack.zip | grep -E 'assets/beforethefall/items/(nuclear_bomb|nuclear_explosion|gas_mask|gas_filter|dosimeter).json'
           unzip -l build/resourcepack.zip | grep -E 'assets/beforethefall/models/item/(nuclear_bomb|nuclear_explosion|gas_mask|gas_filter|dosimeter).json'
           unzip -l build/resourcepack.zip | grep -E 'assets/beforethefall/textures/item/(nuclear_bomb|nuclear_explosion|gas_mask|gas_filter|dosimeter).png'
-          unzip -l build/resourcepack.zip | grep -E 'assets/minecraft/models/item/(tnt|firework_star|leather_helmet|paper).json'
           unzip -l build/resourcepack.zip | grep -E 'assets/beforethefall/textures/gui/gasmask_overlay(_ash|_cracked)?.png'
           unzip -l build/resourcepack.zip | grep -E 'assets/beforethefall/sounds/blast/(close|wave|distant).ogg'
-          unzip -l build/resourcepack.zip | grep -E 'assets/minecraft/models/item/clock.json'
 
       - name: Publish resource pack for automatic client download
         uses: softprops/action-gh-release@v2
