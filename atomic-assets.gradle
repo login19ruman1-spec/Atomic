@@ -81,14 +81,14 @@ tasks.named('generateAtomicResourcePack') {
             soundJsonFile.setText(groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(soundsJson)), 'UTF-8')
         }
 
-        // The Blockbench dosimeter is exported by build.gradle; bind it to a clock item.
-        def clockModel = new File(packRoot, 'assets/minecraft/models/item/clock.json')
-        clockModel.parentFile.mkdirs()
-        clockModel.setText(groovy.json.JsonOutput.toJson([
-            parent: 'minecraft:item/generated',
-            textures: [layer0: 'minecraft:item/clock'],
-            overrides: [[predicate: [custom_model_data: 30], model: 'beforethefall:item/dosimeter']]
-        ]), 'UTF-8')
+        // 1.21.4 item definitions are addressed by ItemMeta#setItemModel.
+        ['dosimeter', 'gas_mask', 'gas_filter', 'nuclear_bomb'].each { id ->
+            def itemDefinition = new File(packRoot, "assets/beforethefall/items/${id}.json")
+            itemDefinition.parentFile.mkdirs()
+            itemDefinition.setText(groovy.json.JsonOutput.toJson([
+                model: [type: 'minecraft:model', model: "beforethefall:item/${id}"]
+            ]), 'UTF-8')
+        }
 
         // Keep user-supplied files visible in the build log for easier troubleshooting.
         def uploaded = []
