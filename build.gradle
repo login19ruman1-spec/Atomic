@@ -74,7 +74,18 @@ tasks.register('generateAtomicResourcePack') {
      def faces=[:]
      cube.faces.each { side, face ->
       if(face.texture!=null) {
-       def f=['uv':face.uv.collect { (it as Number).doubleValue() },'texture':'#0']
+       // Blockbench stores UV coordinates in source-image pixels. Minecraft model JSON
+       // expects UV coordinates in a 0..16 texture space, independent of PNG resolution.
+       def texWidth = Math.max(1.0d, (texture.width ?: 16) as double)
+       def texHeight = Math.max(1.0d, (texture.height ?: 16) as double)
+       def rawUv = face.uv.collect { (it as Number).doubleValue() }
+       def scaledUv = [
+        rawUv[0] * 16.0d / texWidth,
+        rawUv[1] * 16.0d / texHeight,
+        rawUv[2] * 16.0d / texWidth,
+        rawUv[3] * 16.0d / texHeight
+       ]
+       def f=['uv':scaledUv,'texture':'#0']
        if(face.rotation) f.rotation=face.rotation
        faces[side]=f
       }
@@ -87,8 +98,9 @@ tasks.register('generateAtomicResourcePack') {
        'axis':['x','y','z'][axis],'angle':(rot[axis] as Number).doubleValue(),'rescale':(cube.rescale ?: false)]
      exported << element
     }
+    // Keep generated-item display transforms without also generating a flat layer0 sprite.
     def json=['credit':'Blockbench model supplied by the project owner','parent':'minecraft:item/generated',
-      'textures':['layer0':"beforethefall:item/${modelName}",'0':"beforethefall:item/${modelName}"],'elements':exported]
+      'textures':['0':"beforethefall:item/${modelName}"],'elements':exported]
     def modelFile=new File(root,"assets/beforethefall/models/item/${modelName}.json")
     modelFile.parentFile.mkdirs(); modelFile.setText(groovy.json.JsonOutput.toJson(json),'UTF-8')
     if(modelName=='gas_mask') {
