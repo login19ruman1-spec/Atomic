@@ -4,6 +4,13 @@ public final class SurvivalCraftingManager {
  private final BeforeTheFallPlugin plugin;public SurvivalCraftingManager(BeforeTheFallPlugin p){plugin=p;}
  public void register(){
   ShapedRecipe mask=new ShapedRecipe(key("craft_gas_mask"),plugin.getGasMaskManager().createMask());mask.shape("LGL","IRI"," L ");mask.setIngredient('L',Material.LEATHER);mask.setIngredient('G',Material.GLASS_PANE);mask.setIngredient('I',Material.IRON_INGOT);mask.setIngredient('R',Material.IRON_BARS);add(mask);
+  ShapedRecipe dosimeter=new ShapedRecipe(key("craft_dosimeter"),plugin.getDosimeterManager().createDosimeter());
+  dosimeter.shape("GCG","RIR"," G ");
+  dosimeter.setIngredient('G',Material.GLASS_PANE);
+  dosimeter.setIngredient('C',Material.CLOCK);
+  dosimeter.setIngredient('R',Material.REDSTONE);
+  dosimeter.setIngredient('I',Material.IRON_INGOT);
+  add(dosimeter);
   ShapedRecipe filter=new ShapedRecipe(key("craft_filter"),plugin.getGasMaskManager().createFilter());filter.shape("PCP","RIR","PCP");filter.setIngredient('P',Material.PAPER);filter.setIngredient('C',Material.CHARCOAL);filter.setIngredient('I',Material.IRON_INGOT);filter.setIngredient('R',Material.REDSTONE);add(filter);
   ShapedRecipe nugget=new ShapedRecipe(key("craft_filter_iron_nugget"),plugin.getGasMaskManager().createFilter());nugget.shape("PCP","RNR","PCP");nugget.setIngredient('P',Material.PAPER);nugget.setIngredient('C',Material.CHARCOAL);nugget.setIngredient('N',Material.IRON_NUGGET);nugget.setIngredient('R',Material.REDSTONE);add(nugget);
   ItemStack charge=new ItemStack(Material.TNT);ItemMeta cm=charge.getItemMeta();cm.setDisplayName(ChatColor.DARK_RED+"Ядерный заряд");cm.setItemModel(new NamespacedKey(plugin, "nuclear_bomb"));cm.setLore(List.of(ChatColor.GRAY+"Поставь как блок TNT",ChatColor.GRAY+"Подожги огнивом или активируй редстоун"));cm.getPersistentDataContainer().set(new NamespacedKey(plugin,"atomic_charge"),PersistentDataType.BYTE,(byte)1);charge.setItemMeta(cm);ShapedRecipe nuke=new ShapedRecipe(key("craft_nuclear_charge"),charge);nuke.shape("URU","TCT","URU");nuke.setIngredient('U',Material.GOLD_INGOT);nuke.setIngredient('R',Material.REDSTONE_BLOCK);nuke.setIngredient('T',Material.TNT);nuke.setIngredient('C',Material.CLOCK);add(nuke);
