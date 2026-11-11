@@ -71,7 +71,7 @@ public final class DosimeterManager implements Listener {
         ItemStack item = new ItemStack(Material.CLOCK);
         ItemMeta meta = item.getItemMeta();
         meta.setDisplayName(ChatColor.GOLD + "Дозиметр ДП-5");
-        meta.setCustomModelData(30);
+        meta.setItemModel(new NamespacedKey(plugin, "dosimeter"));
         meta.setLore(List.of(
                 ChatColor.GRAY + "Измеряет местный радиационный фон",
                 ChatColor.YELLOW + "ПКМ — снять показания"
