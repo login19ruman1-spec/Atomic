@@ -34,7 +34,7 @@ tasks.register('generateAtomicResourcePack') {
   if(maskOverlay.exists()) { def overlay=new File(root,'assets/minecraft/textures/misc/pumpkinblur.png'); overlay.parentFile.mkdirs(); java.nio.file.Files.copy(maskOverlay.toPath(),overlay.toPath(),java.nio.file.StandardCopyOption.REPLACE_EXISTING) }
   // Export user-supplied Blockbench free/item models and their embedded textures.
   // Export Blockbench sources from both the legacy source folder and the owner upload folder.
-  // Prefer the legacy source when a model name exists in both locations.
+  // Prefer the current owner uploads; fall back to the legacy Blockbench folder.
   def bbDirs=[new File(projectDir,'src/main/resources/atomic-assets/models/item'),
               new File(projectDir,'src/main/resources/blockbench')]
   def bbFiles=bbDirs.findAll { it.exists() }
