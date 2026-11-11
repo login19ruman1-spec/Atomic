@@ -2,6 +2,8 @@ package ru.artem.beforethefall.equipment;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
+import org.bukkit.Sound;
+import org.bukkit.SoundCategory;
 import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
@@ -20,6 +22,7 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 import ru.artem.beforethefall.BeforeTheFallPlugin;
 
 import java.util.HashSet;
@@ -31,6 +34,7 @@ public final class NuclearChargeListener implements Listener {
     private final NamespacedKey chargeKey;
     private final Set<String> placedCharges = new HashSet<>();
     private final java.util.Map<String, UUID> bombDisplays = new java.util.HashMap<>();
+    private final java.util.Map<String, BukkitTask> countdowns = new java.util.HashMap<>();
 
     public NuclearChargeListener(BeforeTheFallPlugin plugin) {
         this.plugin = plugin;
@@ -74,6 +78,11 @@ public final class NuclearChargeListener implements Listener {
     @EventHandler
     public void onBreak(BlockBreakEvent event) {
         String id = key(event.getBlock());
+        BukkitTask countdown = countdowns.remove(id);
+        if (countdown != null) {
+            countdown.cancel();
+            event.getPlayer().sendMessage(ChatColor.YELLOW + "Обратный отсчёт остановлен: заряд обезврежен.");
+        }
         if (placedCharges.remove(id)) save();
         removeDisplay(id);
     }
@@ -108,11 +117,52 @@ public final class NuclearChargeListener implements Listener {
     private void trigger(Block block) {
         if (!isPlacedCharge(block)) return;
         String id = key(block);
-        placedCharges.remove(id);
-        removeDisplay(id);
-        save();
-        var location = block.getLocation().add(.5, .5, .5);
-        block.setType(Material.AIR, false);
-        plugin.getNuclearBlastManager().detonate(location, (float) plugin.getConfig().getDouble("nuclear-blast.default-power", 18.0));
+        if (countdowns.containsKey(id)) return;
+
+        int seconds = Math.max(1, Math.min(60,
+                plugin.getConfig().getInt("nuclear-blast.countdown-seconds", 10)));
+        plugin.getLogger().info("Nuclear charge armed at " + id + "; countdown " + seconds + " seconds.");
+
+        BukkitRunnable countdown = new BukkitRunnable() {
+            private int remaining = seconds;
+
+            @Override
+            public void run() {
+                if (block.getType() != Material.TNT || !placedCharges.contains(id)) {
+                    countdowns.remove(id);
+                    removeDisplay(id);
+                    cancel();
+                    return;
+                }
+
+                if (remaining <= 0) {
+                    countdowns.remove(id);
+                    placedCharges.remove(id);
+                    removeDisplay(id);
+                    save();
+
+                    var location = block.getLocation().add(.5, .5, .5);
+                    block.setType(Material.AIR, false);
+                    plugin.getNuclearBlastManager().detonate(location,
+                            (float) plugin.getConfig().getDouble("nuclear-blast.default-power", 18.0));
+                    cancel();
+                    return;
+                }
+
+                double soundRadius = plugin.getConfig().getDouble("nuclear-blast.distant-sound-radius", 500.0);
+                double maxDistanceSquared = soundRadius * soundRadius;
+                for (org.bukkit.entity.Player player : block.getWorld().getPlayers()) {
+                    if (player.getLocation().distanceSquared(block.getLocation()) > maxDistanceSquared) continue;
+                    player.sendTitle(ChatColor.DARK_RED + "☢ " + remaining,
+                            ChatColor.YELLOW + "Ядерный заряд активирован", 0, 20, 0);
+                    float pitch = (float) Math.min(1.8, 0.65 + (seconds - remaining) * 0.08);
+                    player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING,
+                            SoundCategory.MASTER, 0.9f, pitch);
+                }
+                remaining--;
+            }
+        };
+
+        countdowns.put(id, countdown.runTaskTimer(plugin, 0L, 20L));
     }
 }
