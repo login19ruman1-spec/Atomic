@@ -4,6 +4,7 @@ import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.ItemDisplay;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -39,7 +40,7 @@ public final class NuclearBlastManager {
         World world = origin.getWorld();
         if (world == null) return;
         final float p = Math.max(4.0f, Math.min(40.0f, power));
-        final double radius = p * 9.0;
+        final double radius = p * plugin.getConfig().getDouble("nuclear-blast.shockwave-radius-per-power", 14.0);
         final Location center = origin.clone();
 
         // Keep the flash local; long-distance audio is sent directly to each listener
@@ -53,6 +54,11 @@ public final class NuclearBlastManager {
         playGlobalSoundLayers(world, center);
         startEarthquake(world, center);
         spawnTexturedBlast(world, center, p);
+        // Remove pre-existing loose drops in the immediate destruction zone.
+        double cleanupRadius = plugin.getConfig().getDouble("nuclear-blast.block-radius", 90.0);
+        for (org.bukkit.entity.Entity entity : world.getNearbyEntities(center, cleanupRadius, cleanupRadius, cleanupRadius)) {
+            if (entity instanceof Item) entity.remove();
+        }
         aftermath.apply(center);
         radiation.addFalloutZone(center, plugin.getConfig().getDouble("nuclear-blast.fallout-intensity", 100.0),
                 plugin.getConfig().getDouble("nuclear-blast.fallout-propagation-radius", 3000.0),
@@ -60,10 +66,11 @@ public final class NuclearBlastManager {
 
         new BukkitRunnable() {
             int tick = 0;
-            final List<BlockPos> blocks = plugin.getConfig().getBoolean("nuclear-blast.destroy-blocks", true)
-                    ? collectDestructionBlocks(center, Math.max(2, Math.min(25, plugin.getConfig().getInt("nuclear-blast.block-radius", 25))))
-                    : List.of();
-            int blockCursor = 0;
+            final DestructionCursor destruction = plugin.getConfig().getBoolean("nuclear-blast.destroy-blocks", true)
+                    ? new DestructionCursor(center,
+                        Math.max(16, Math.min(160, plugin.getConfig().getInt("nuclear-blast.block-radius", 90))),
+                        Math.max(24, Math.min(192, plugin.getConfig().getInt("nuclear-blast.vertical-destruction-radius", 110))))
+                    : null;
             final Set<UUID> hitPlayers = new HashSet<>();
 
             @Override public void run() {
@@ -85,26 +92,14 @@ public final class NuclearBlastManager {
                     }
                 }
 
-                // Keep edits bounded to avoid freezing the Paper main thread.
-                int edits = 0;
-                while (blockCursor < blocks.size() && edits < 120) {
-                    BlockPos pos = blocks.get(blockCursor++);
-                    if (!world.isChunkLoaded(pos.x >> 4, pos.z >> 4)) continue;
-                    Block block = world.getBlockAt(pos.x, pos.y, pos.z);
-                    Material type = block.getType();
-                    if (type.isAir() || type.getHardness() < 0 || block.getState() instanceof org.bukkit.block.TileState) continue;
-                    if (type == Material.BEDROCK || type == Material.END_PORTAL_FRAME) continue;
-                    block.breakNaturally();
-                    if (ThreadLocalRandom.current().nextDouble() < 0.035
-                            && block.getType().isAir() && !block.getRelative(0, -1, 0).getType().isAir()) {
-                        block.setType(Material.FIRE, false);
-                    }
-                    edits++;
-                }
+                // Process a bounded number of coordinates per tick. setType(AIR) deliberately
+                // creates no drops, including for containers; water and ice evaporate too.
+                if (destruction != null) destruction.process(world,
+                        Math.max(500, plugin.getConfig().getInt("nuclear-blast.block-edits-per-tick", 5000)));
 
                 if (tick <= 80) spawnMushroomCloud(world, center, tick, p);
                 if (tick == 18 || tick == 42) world.playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 7.0f, 0.7f);
-                if (tick > 80 && blockCursor >= blocks.size()) cancel();
+                if (tick > 80 && (destruction == null || destruction.isDone())) cancel();
             }
         }.runTaskTimer(plugin, 1L, 1L);
     }
@@ -200,25 +195,72 @@ public final class NuclearBlastManager {
         }.runTaskTimer(plugin, 1L, 2L);
     }
 
-    private List<BlockPos> collectDestructionBlocks(Location center, int blockRadius) {
-        // Store coordinates only; resolve blocks in bounded batches and never force-load chunks.
-        List<BlockPos> result = new ArrayList<>();
-        World world = center.getWorld();
-        if (world == null) return result;
-        int cx = center.getBlockX(), cy = center.getBlockY(), cz = center.getBlockZ();
-        int r2 = blockRadius * blockRadius;
-        for (int x = -blockRadius; x <= blockRadius; x++) {
-            for (int y = -blockRadius; y <= blockRadius; y++) {
-                int yy = cy + y;
-                if (yy < world.getMinHeight() || yy >= world.getMaxHeight()) continue;
-                for (int z = -blockRadius; z <= blockRadius; z++) {
-                    if (x*x + y*y + z*z <= r2) result.add(new BlockPos(cx + x, yy, cz + z));
+    private static final class DestructionCursor {
+        private final int cx, cy, cz, radius, verticalRadius;
+        private int x, z, y;
+        private boolean done;
+
+        private DestructionCursor(Location center, int radius, int verticalRadius) {
+            this.cx = center.getBlockX(); this.cy = center.getBlockY(); this.cz = center.getBlockZ();
+            this.radius = radius; this.verticalRadius = verticalRadius;
+            this.x = -radius; this.z = -radius; this.y = -verticalRadius;
+        }
+
+        private boolean isDone() { return done; }
+
+        private void process(World world, int budget) {
+            int checked = 0;
+            ThreadLocalRandom random = ThreadLocalRandom.current();
+            while (!done && checked < budget) {
+                int bx = cx + x, bz = cz + z;
+                if (y == -verticalRadius && !world.isChunkLoaded(bx >> 4, bz >> 4)) {
+                    nextColumn();
+                    continue;
                 }
+                int by = cy + y;
+                int localY = y;
+                y++;
+                checked++;
+                if (by < world.getMinHeight() || by >= world.getMaxHeight()) {
+                    if (y > verticalRadius) nextColumn();
+                    continue;
+                }
+                double horizontal = (double)(x * x + z * z) / (radius * (double)radius);
+                if (horizontal > 1.0) {
+                    if (y > verticalRadius) nextColumn();
+                    continue;
+                }
+                double vertical = (double)(localY * localY) / (verticalRadius * (double)verticalRadius);
+                double normalized = Math.min(1.0, Math.sqrt(horizontal * 0.72 + vertical * 0.28));
+                Block block = world.getBlockAt(bx, by, bz);
+                Material type = block.getType();
+                if (type.isAir() || type == Material.BEDROCK || type == Material.BARRIER
+                        || type == Material.END_PORTAL_FRAME || type == Material.END_PORTAL
+                        || type == Material.COMMAND_BLOCK || type == Material.CHAIN_COMMAND_BLOCK
+                        || type == Material.REPEATING_COMMAND_BLOCK) {
+                    if (y > verticalRadius) nextColumn();
+                    continue;
+                }
+                // A guaranteed pulverized core with irregular surviving pockets farther out.
+                double chance = normalized < 0.12 ? 1.0 : 0.78 - normalized * 0.43;
+                if (random.nextDouble() <= chance) {
+                    block.setType(Material.AIR, false);
+                    if (random.nextDouble() < 0.018) {
+                        Block below = block.getRelative(0, -1, 0);
+                        if (below.getType().isSolid() && block.getType().isAir()) block.setType(Material.FIRE, false);
+                    }
+                }
+                if (y > verticalRadius) nextColumn();
             }
         }
-        return result;
+
+        private void nextColumn() {
+            y = -verticalRadius;
+            z++;
+            if (z > radius) { z = -radius; x++; }
+            if (x > radius) done = true;
+        }
     }
-    private record BlockPos(int x, int y, int z) { }
 
     private void spawnShockRing(World world, Location center, double radius, int tick) {
         if (radius <= 0) return;
