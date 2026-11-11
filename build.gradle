@@ -18,10 +18,6 @@ tasks.register('generateAtomicResourcePack') {
   writeText('pack.mcmeta','{"pack":{"pack_format":46,"description":"BeforeTheFall Atomic Survival — gas mask and filter"}}')
   png('assets/minecraft/textures/block/snow.png',16,16){g,im->def rng=new java.util.Random(712367L);for(int y=0;y<16;y++)for(int x=0;x<16;x++){int n=rng.nextInt(5);int base=75+n*8;g.setColor(new java.awt.Color(base,base+2,base+3,255));g.fillRect(x,y,1,1)};g.setColor(new java.awt.Color(38,42,43));g.fillRect(2,3,2,1);g.fillRect(10,8,3,1);g.fillRect(5,13,2,1);g.setColor(new java.awt.Color(145,148,145));g.fillRect(6,2,2,1);g.fillRect(13,12,2,1);g.fillRect(1,10,1,2)}
   writeText('assets/minecraft/models/item/firework_star.json','{"parent":"minecraft:item/generated","textures":{"layer0":"minecraft:item/firework_star"},"overrides":[{"predicate":{"custom_model_data":6},"model":"beforethefall:item/nuclear_explosion"}]}')
-  // Copy the owner's full-screen gas-mask overlay into Minecraft's built-in pumpkin HUD layer.
-  // The mask item is a carved pumpkin so vanilla clients display this overlay without a client mod.
-  def maskOverlay=new File(projectDir,'src/main/resources/atomic-assets/textures/gui/gasmask_overlay.png')
-  if(maskOverlay.exists()) { def overlay=new File(root,'assets/minecraft/textures/misc/pumpkinblur.png'); overlay.parentFile.mkdirs(); java.nio.file.Files.copy(maskOverlay.toPath(),overlay.toPath(),java.nio.file.StandardCopyOption.REPLACE_EXISTING) }
   // Export user-supplied Blockbench free/item models and their embedded textures.
   // Export Blockbench sources from both the legacy source folder and the owner upload folder.
   // Prefer the current owner uploads; fall back to the legacy Blockbench folder.
@@ -100,7 +96,7 @@ tasks.register('generateAtomicResourcePack') {
     }
    }
   }
-  writeText('assets/minecraft/models/item/carved_pumpkin.json','{"parent":"minecraft:item/generated","textures":{"layer0":"minecraft:item/carved_pumpkin"},"overrides":[{"predicate":{"custom_model_data":21},"model":"beforethefall:item/gas_mask"},{"predicate":{"custom_model_data":22},"model":"beforethefall:item/gas_mask_cracked"},{"predicate":{"custom_model_data":23},"model":"beforethefall:item/gas_mask_fogged"},{"predicate":{"custom_model_data":24},"model":"beforethefall:item/gas_mask_cracked_fogged"}]}')
+  writeText('assets/minecraft/models/item/leather_helmet.json','{"parent":"minecraft:item/generated","textures":{"layer0":"minecraft:item/leather_helmet"},"overrides":[{"predicate":{"custom_model_data":21},"model":"beforethefall:item/gas_mask"},{"predicate":{"custom_model_data":22},"model":"beforethefall:item/gas_mask_cracked"},{"predicate":{"custom_model_data":23},"model":"beforethefall:item/gas_mask_fogged"},{"predicate":{"custom_model_data":24},"model":"beforethefall:item/gas_mask_cracked_fogged"}]}')
   writeText('assets/minecraft/models/item/paper.json','{"parent":"minecraft:item/generated","textures":{"layer0":"minecraft:item/paper"},"overrides":[{"predicate":{"custom_model_data":20},"model":"beforethefall:item/gas_filter"}]}')
   writeText('assets/minecraft/models/item/tnt.json','{"parent":"minecraft:item/generated","textures":{"layer0":"minecraft:item/tnt"},"overrides":[{"predicate":{"custom_model_data":3},"model":"beforethefall:item/nuclear_bomb"}]}')
  }
