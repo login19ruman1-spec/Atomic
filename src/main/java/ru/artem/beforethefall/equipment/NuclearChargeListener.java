@@ -69,12 +69,12 @@ public final class NuclearChargeListener implements Listener {
         ItemStack displayItem = event.getItemInHand().clone();
         displayItem.setAmount(1);
         ItemDisplay display = event.getBlockPlaced().getWorld().spawn(
-                event.getBlockPlaced().getLocation().add(0.5, 0.15, 0.5), ItemDisplay.class);
+                event.getBlockPlaced().getLocation().add(0.5, 0.5, 0.5), ItemDisplay.class);
         display.setItemStack(displayItem);
         display.setBillboard(Display.Billboard.FIXED);
         display.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
         display.setTransformation(new Transformation(new Vector3f(), new Quaternionf(),
-                new Vector3f(0.72f, 0.72f, 0.72f), new Quaternionf()));
+                new Vector3f(0.90f, 0.90f, 0.90f), new Quaternionf()));
         display.setViewRange(1.5f);
         bombDisplays.put(key(event.getBlockPlaced()), display.getUniqueId());
         save();
