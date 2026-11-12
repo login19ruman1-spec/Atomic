@@ -206,6 +206,12 @@ The build generates the embedded resource pack and packages it into the plugin J
 
 The pack skins vanilla snow layers as ash while retaining their thin-layer collision and stacking. Vanilla snow layers share the ash texture while the pack is active.
 
+### Wearable protective suit and sound assets
+
+The four yellow suit pieces use Paper 1.21.4's `EquippableComponent#setModel` with the `beforethefall:protective_suit` equipment asset. The resource-pack build decodes the checked-in 64×32 humanoid and leggings PNG source files into the vanilla armor-layer texture paths, then includes the equipment JSON definition. This uses Minecraft's standard armor silhouette with the custom suit layer; it is not arbitrary Blockbench geometry on the player's body.
+
+Gas-mask equip, filter, breathing and empty-filter sounds, plus the dosimeter measurement sound, are decoded from their checked-in Base64 OGG sources. The three blast OGGs are included as separate close, distant and shockwave events. The server now logs the client's resource-pack result; `SUCCESSFULLY_LOADED` confirms the client applied the pack, while `DECLINED` or `FAILED_DOWNLOAD` explains why custom visuals/audio are absent.
+
 ## Blast and aftermath defaults
 
 The branch defaults are tuned to the requested station scale:
