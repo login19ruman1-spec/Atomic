@@ -3,6 +3,11 @@ radiation:
   tick-interval: 40
   intake-scale: 0.12
   decay-per-tick: 0.025
+  underground-depth-limit: 20.0
+  underground-min-factor: 0.15
+  medicine-duration-seconds: 300
+  medicine-decay-per-tick: 0.15
+  medicine-slowness-seconds: 60
   warning-threshold: 25.0
   sickness-threshold: 50.0
   severe-threshold: 75.0
