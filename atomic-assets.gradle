@@ -24,25 +24,68 @@ tasks.named('generateAtomicResourcePack') {
         copyAssetTree('gas-mask/textures', 'assets/beforethefall/textures/item')
         copyAssetTree('gas-mask/models', 'assets/beforethefall/models/item')
 
-        // Copy uploaded audio bytes into the actual resource pack before it is zipped.
+        // Copy uploaded OGG files into the resource pack.
         def soundsDir = new File(atomicAssetsDir, 'sounds')
         def gasMaskSoundsDir = new File(atomicAssetsDir, 'gas-mask/sounds')
+        def packagedSoundsDir = new File(packRoot, 'assets/beforethefall/sounds')
         if (gasMaskSoundsDir.exists()) {
             copy {
                 from gasMaskSoundsDir
                 include '**/*.ogg'
-                into new File(packRoot, 'assets/beforethefall/sounds')
+                into packagedSoundsDir
             }
         }
         if (soundsDir.exists()) {
             copy {
                 from soundsDir
                 include '**/*.ogg'
-                into new File(packRoot, 'assets/beforethefall/sounds')
+                into packagedSoundsDir
             }
         }
 
-        // Sound files are uploaded under sounds/, and exposed as stable sound event IDs.
+        // The small original OGG sound sources are kept as base64 text so the
+        // repository upload API can preserve them losslessly. Decode them here.
+        def encodedSounds = [
+            'gas-mask/equip' : 'gas-mask/equip.ogg.b64',
+            'gas-mask/filter': 'gas-mask/filter.ogg.b64',
+            'gas-mask/breath': 'gas-mask/breath.ogg.b64',
+            'gas-mask/empty' : 'gas-mask/empty.ogg.b64',
+            'dosimeter/measure': 'dosimeter/measure.ogg.b64'
+        ]
+        encodedSounds.each { relativePath, encodedName ->
+            def encodedFile = new File(gasMaskSoundsDir, encodedName)
+            if (!encodedFile.isFile()) {
+                throw new GradleException("Missing encoded sound source: " + encodedFile)
+            }
+            def encoded = encodedFile.getText('UTF-8').replaceAll('\\s+', '')
+            byte[] audio
+            try {
+                audio = java.util.Base64.decoder.decode(encoded)
+            } catch (IllegalArgumentException ex) {
+                throw new GradleException("Invalid base64 sound source: " + encodedFile, ex)
+            }
+            if (audio.length < 100 || new String(audio, 0, 4, 'US-ASCII') != 'OggS') {
+                throw new GradleException("Decoded sound is not a valid OGG stream header: " + encodedFile)
+            }
+            def output = new File(packagedSoundsDir, relativePath + '.ogg')
+            output.parentFile.mkdirs()
+            output.bytes = audio
+        }
+
+        // Refuse to publish a resource pack if any sound called by the plugin is absent.
+        def requiredSoundPaths = [
+            'blast/close', 'blast/wave', 'blast/distant',
+            'gas-mask/equip', 'gas-mask/filter', 'gas-mask/breath', 'gas-mask/empty',
+            'dosimeter/measure'
+        ]
+        def missingSounds = requiredSoundPaths.findAll { relativePath ->
+            !new File(packagedSoundsDir, relativePath + '.ogg').isFile()
+        }
+        if (!missingSounds.isEmpty()) {
+            throw new GradleException("Missing required OGG sounds in generated resource pack: " + missingSounds.join(', '))
+        }
+
+        // Register sound event IDs against files that were actually copied or decoded.
         def soundEvents = [
             blast_close: 'blast/close',
             blast_wave: 'blast/wave',
@@ -55,27 +98,22 @@ tasks.named('generateAtomicResourcePack') {
             dosimeter_measure: 'dosimeter/measure'
         ]
         def soundsJson = [:]
-        ['gas_mask_on': 'gas-mask/equip', 'gas_mask_filter': 'gas-mask/filter', 'gas_mask_breath': 'gas-mask/breath', 'gas_mask_empty': 'gas-mask/empty'].each { eventName, relativePath ->
-            def soundFile = new File(gasMaskSoundsDir, relativePath + '.ogg')
-            if (soundFile.exists()) {
-                soundsJson[eventName] = [sounds: [[name: 'beforethefall:' + relativePath, stream: true]]]
-            }
-        }
-        // New, simple upload layout: all sound categories live under gas-mask/sounds/.
-        ['blast_close': 'blast/close', 'blast_wave': 'blast/wave', 'blast_distant': 'blast/distant',
-         'dosimeter_measure': 'dosimeter/measure'].each { eventName, relativePath ->
-            def soundFile = new File(gasMaskSoundsDir, relativePath + '.ogg')
-            if (soundFile.exists()) {
+        [
+            'gas_mask_on': 'gas-mask/equip',
+            'gas_mask_filter': 'gas-mask/filter',
+            'gas_mask_breath': 'gas-mask/breath',
+            'gas_mask_empty': 'gas-mask/empty'
+        ].each { eventName, relativePath ->
+            if (new File(packagedSoundsDir, relativePath + '.ogg').isFile()) {
                 soundsJson[eventName] = [sounds: [[name: 'beforethefall:' + relativePath, stream: true]]]
             }
         }
         soundEvents.each { eventName, soundPath ->
-            def soundFile = new File(soundsDir, soundPath + '.ogg')
-            if (soundFile.exists()) {
-                soundsJson[eventName] = [sounds: [[name: "beforethefall:" + soundPath, stream: true]]]
+            if (new File(packagedSoundsDir, soundPath + '.ogg').isFile()) {
+                soundsJson[eventName] = [sounds: [[name: 'beforethefall:' + soundPath, stream: true]]]
             }
         }
-        // Extend the positional blast layers to the configured 500-block listening radius.
+        // Use the specified maximum listening distance for all blast layers.
         ['blast_close', 'blast_distant', 'blast_wave'].each { eventName ->
             if (soundsJson.containsKey(eventName)) {
                 soundsJson[eventName].attenuation_distance = 500

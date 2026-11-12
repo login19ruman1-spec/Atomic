@@ -30,6 +30,7 @@ public final class NuclearChargeListener implements Listener {
     private final BeforeTheFallPlugin plugin;
     private final NamespacedKey chargeKey;
     private final Set<String> placedCharges = new HashSet<>();
+    private final Set<String> detonatingCharges = new HashSet<>();
     private final java.util.Map<String, UUID> bombDisplays = new java.util.HashMap<>();
 
     public NuclearChargeListener(BeforeTheFallPlugin plugin) {
@@ -69,12 +70,13 @@ public final class NuclearChargeListener implements Listener {
         display.setViewRange(1.5f);
         bombDisplays.put(key(event.getBlockPlaced()), display.getUniqueId());
         save();
-        event.getPlayer().sendMessage(ChatColor.RED + "☢ Заряд установлен. Подожги его огнивом или подай редстоун-сигнал.");
+        event.getPlayer().sendMessage(ChatColor.RED + "☢ Заряд установлен. Подожги его огнивом или подай редстоун-сигнал — сработает 10-секундный таймер.");
     }
     @EventHandler
     public void onBreak(BlockBreakEvent event) {
         String id = key(event.getBlock());
         if (placedCharges.remove(id)) save();
+        detonatingCharges.remove(id);
         removeDisplay(id);
     }
     private void removeDisplay(String id) {
@@ -108,11 +110,52 @@ public final class NuclearChargeListener implements Listener {
     private void trigger(Block block) {
         if (!isPlacedCharge(block)) return;
         String id = key(block);
-        placedCharges.remove(id);
-        removeDisplay(id);
-        save();
-        var location = block.getLocation().add(.5, .5, .5);
-        block.setType(Material.AIR, false);
-        plugin.getNuclearBlastManager().detonate(location, (float) plugin.getConfig().getDouble("nuclear-blast.default-power", 18.0));
+        if (!detonatingCharges.add(id)) return;
+
+        new BukkitRunnable() {
+            private int secondsRemaining = 10;
+
+            @Override
+            public void run() {
+                if (!isPlacedCharge(block) || !block.getChunk().isLoaded()) {
+                    detonatingCharges.remove(id);
+                    cancel();
+                    return;
+                }
+
+                Location center = block.getLocation().add(0.5, 0.75, 0.5);
+                World world = block.getWorld();
+
+                if (secondsRemaining <= 0) {
+                    detonatingCharges.remove(id);
+                    placedCharges.remove(id);
+                    removeDisplay(id);
+                    save();
+                    block.setType(Material.AIR, false);
+                    plugin.getNuclearBlastManager().detonate(
+                            center,
+                            (float) plugin.getConfig().getDouble("nuclear-blast.default-power", 18.0)
+                    );
+                    cancel();
+                    return;
+                }
+
+                world.spawnParticle(Particle.ELECTRIC_SPARK, center, 8, 0.22, 0.22, 0.22, 0.02);
+                world.spawnParticle(Particle.SMOKE, center, 2, 0.18, 0.18, 0.18, 0.005);
+                float pitch = 0.65f + (10 - secondsRemaining) * 0.075f;
+                world.playSound(center, Sound.BLOCK_NOTE_BLOCK_PLING, SoundCategory.BLOCKS, 0.9f, pitch);
+
+                for (Player player : world.getPlayers()) {
+                    if (player.getLocation().distanceSquared(center) <= 64.0 * 64.0) {
+                        player.sendTitle(
+                                ChatColor.DARK_RED + "☢ " + secondsRemaining,
+                                ChatColor.RED + "ЯДЕРНЫЙ ЗАРЯД АКТИВИРОВАН",
+                                0, 20, 0
+                        );
+                    }
+                }
+                secondsRemaining--;
+            }
+        }.runTaskTimer(plugin, 0L, 20L);
     }
 }
