@@ -89,6 +89,8 @@ P C P
 
 Wear the gas mask and right-click while holding the crafted filter to install it. The configured default filter life is **10 minutes** on this branch.
 
+A shapeless alternative is also registered: combine **4 Paper + 2 Charcoal + 2 Redstone + 1 Iron Ingot** anywhere in the crafting grid to make one replacement filter.
+
 ### Dosimeter
 
 Output: **Дозиметр ДП-5** (clock)
