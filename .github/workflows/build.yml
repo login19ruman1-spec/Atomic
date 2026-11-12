@@ -58,6 +58,7 @@ jobs:
           PY
 
       - name: Publish resource pack for automatic client download
+        id: resourcepack_release
         if: github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v2
         with:
@@ -74,7 +75,7 @@ jobs:
         if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh api repos/${{ github.repository }}/releases/tags/resourcepack9-latest -X PATCH -F draft=false
+        run: gh api repos/${{ github.repository }}/releases/${{ steps.resourcepack_release.outputs.id }} -X PATCH -F draft=false
       - name: Upload plugin JAR
         uses: actions/upload-artifact@v4
         with:
