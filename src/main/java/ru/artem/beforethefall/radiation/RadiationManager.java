@@ -108,7 +108,7 @@ public final class RadiationManager implements Listener {
     public void addFalloutZone(Location center, double intensity, double radius, long durationTicks) {
         if (center.getWorld() == null) return;
         fallout.add(new FalloutZone(center.getWorld().getUID(), center.getX(), center.getY(), center.getZ(),
-                Math.max(0.0, intensity), Math.max(1.0, radius),
+                Math.min(35.0, Math.max(0.0, intensity)), Math.min(600.0, Math.max(1.0, radius)),
                 System.currentTimeMillis() + Math.max(0L, durationTicks) * 50L));
         save();
     }
@@ -165,7 +165,7 @@ public final class RadiationManager implements Listener {
             try {
                 fallout.add(new FalloutZone(UUID.fromString(String.valueOf(value.get("world"))),
                         num(value.get("x")), num(value.get("y")), num(value.get("z")),
-                        num(value.get("intensity")), Math.max(1.0, num(value.get("radius"))),
+                        Math.min(35.0, num(value.get("intensity"))), Math.min(600.0, Math.max(1.0, num(value.get("radius")))),
                         (long) num(value.get("expires-at"))));
             } catch (RuntimeException ignored) {
                 plugin.getLogger().warning("Skipping malformed fallout zone.");
@@ -250,8 +250,15 @@ public final class RadiationManager implements Listener {
             double radius = Math.max(1.0, num(zone.get("radius")));
             double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
             if (distance > radius) continue;
+            double depthLimit = Math.max(1.0, plugin.getConfig().getDouble("radiation.underground-depth-limit", 20.0));
+            double depth = num(zone.get("y")) - location.getY();
+            double minFactor = plugin.getConfig().getDouble("radiation.underground-min-factor", 0.15);
+            double undergroundFactor = depth > depthLimit ? 0.0
+                    : depth <= 0.0 ? 1.0
+                    : 1.0 - (1.0 - minFactor) * (depth / depthLimit);
             double remaining = 1.0 - distance / radius;
-            result += num(zone.get("level")) * (0.08 + 0.92 * Math.pow(remaining, 1.35));
+            result += num(zone.get("level")) * undergroundFactor
+                    * (0.08 + 0.92 * Math.pow(remaining, 1.35));
         }
 
         for (FalloutZone zone : fallout) {
