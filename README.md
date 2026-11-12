@@ -91,6 +91,23 @@ Wear the gas mask and right-click while holding the crafted filter to install it
 
 A shapeless alternative is also registered: combine **4 Paper + 2 Charcoal + 2 Redstone + 1 Iron Ingot** anywhere in the crafting grid to make one replacement filter.
 
+### Anti-radiation medicine
+
+Output: **Антирадиационный препарат** (potion)
+
+```text
+- G -
+R B H
+- G -
+```
+
+- `G` — Golden Carrot
+- `R` — Redstone
+- `B` — Glass Bottle
+- `H` — Honey Bottle
+
+Drink it to accelerate radiation-dose recovery for 5 minutes; Slowness lasts briefly.
+
 ### Dosimeter
 
 Output: **Дозиметр ДП-5** (clock)
@@ -223,10 +240,11 @@ The branch defaults are tuned to the requested station scale:
 - Main blast sound: up to **500 blocks**; players below Y=60 or with zero sky light receive the muffled layer.
 - Shockwave sound: delayed by **30 ticks (1.5 seconds)**, with reduced volume, up to 500 blocks.
 - Fallout propagation radius: **1,500 blocks**.
+- Underground fallout: radiation weakens with depth and becomes zero at the configured depth limit (default **20 blocks** below the blast centre).
 - Water contamination and terrain aftermath radius: **900 blocks**.
 - Gas-mask filter: **10 minutes of wall-clock time**, so low TPS does not extend cartridge life.
 
-These are configurable in `plugins/BeforeTheFall/config.yml`. Always test destructive behavior on a copied world first.
+These are configurable in `plugins/BeforeTheFall/config.yml`. The admin GUI (`/bft menu`) includes a depth-limit control with presets from 10 to 40 blocks. The medicine settings are `radiation.medicine-duration-seconds`, `radiation.medicine-decay-per-tick`, and `radiation.medicine-slowness-seconds`. Always test destructive behavior on a copied world first.
 
 ## Current implementation notes and limitations
 
