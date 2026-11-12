@@ -61,7 +61,7 @@ jobs:
         if: github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: resourcepack3-latest
+          tag_name: resourcepack4-latest
           name: Atomic resource pack (verified latest)
           prerelease: true
           make_latest: false
