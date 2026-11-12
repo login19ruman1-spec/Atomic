@@ -61,14 +61,20 @@ jobs:
         if: github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: resourcepack8-latest
+          tag_name: resourcepack9-latest
           name: Atomic resource pack (verified latest)
+          draft: true
           prerelease: true
           make_latest: false
           overwrite_files: true
           files: |
             build/resourcepack.zip
             build/libs/BeforeTheFall-Paper-*.jar
+      - name: Publish resource pack release after uploading assets
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh api repos/${{ github.repository }}/releases/tags/resourcepack9-latest -X PATCH -F draft=false
       - name: Upload plugin JAR
         uses: actions/upload-artifact@v4
         with:
