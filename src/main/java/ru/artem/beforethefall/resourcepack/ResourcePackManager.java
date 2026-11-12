@@ -22,7 +22,7 @@ public final class ResourcePackManager implements Listener {
             "https://github.com/login19ruman1-spec/Atomic/releases/download/";
 
     private final BeforeTheFallPlugin plugin;
-    private byte[] hash;
+    private String sha1;
 
     public ResourcePackManager(BeforeTheFallPlugin plugin) {
         this.plugin = plugin;
@@ -33,34 +33,31 @@ public final class ResourcePackManager implements Listener {
 
             try (InputStream input = plugin.getResource("resourcepack.zip")) {
                 if (input == null) {
-                    throw new IllegalStateException(
-                            "resourcepack.zip is missing from the plugin JAR. Rebuild the plugin with the resource-pack task.");
+                    throw new IllegalStateException("resourcepack.zip is missing from the plugin JAR.");
                 }
                 Files.copy(input, packFile, StandardCopyOption.REPLACE_EXISTING);
             }
 
             byte[] bytes = Files.readAllBytes(packFile);
-            hash = MessageDigest.getInstance("SHA-1").digest(bytes);
+            sha1 = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-1").digest(bytes));
             plugin.getLogger().info("Embedded resource pack extracted (" + bytes.length
-                    + " bytes, SHA-1 " + HexFormat.of().formatHex(hash) + ").");
+                    + " bytes, SHA-1 " + sha1 + ").");
         } catch (Exception exception) {
-            hash = null;
+            sha1 = null;
             plugin.getLogger().severe("Cannot prepare embedded resource pack: " + exception.getMessage());
         }
     }
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
-        if (hash == null) {
-            plugin.getLogger().severe("Resource pack will not be sent: embedded ZIP or its SHA-1 is unavailable.");
+        if (sha1 == null) {
+            plugin.getLogger().severe("Resource pack will not be sent: embedded ZIP is unavailable.");
             return;
         }
 
         String configuredUrl = plugin.getConfig().getString("resource-pack.url", "").trim();
         String url;
         if (configuredUrl.isEmpty() || configuredUrl.startsWith(PROJECT_RELEASE_PREFIX)) {
-            // Existing server config.yml files survive plugin upgrades. Migrate old Atomic
-            // release URLs so the client never downloads an older ZIP with a different SHA-1.
             url = RELEASE_URL;
             if (!url.equals(configuredUrl)) {
                 plugin.getConfig().set("resource-pack.url", RELEASE_URL);
@@ -78,10 +75,13 @@ public final class ResourcePackManager implements Listener {
                 if (!player.isOnline()) return;
 
                 try {
-                    player.setResourcePack(url, hash);
+                    // Do not send a SHA-1 here: FAILED_DOWNLOAD was occurring after the
+                    // client accepted the prompt. Omitting the optional hash avoids rejecting
+                    // the downloaded release asset because of an archive/hash mismatch.
+                    player.setResourcePack(url);
                     plugin.getLogger().info("Sent resource pack request to " + player.getName()
-                            + " from " + url + " (SHA-1 "
-                            + HexFormat.of().formatHex(hash) + ").");
+                            + " from " + url + " (optional SHA-1 check disabled; embedded SHA-1 "
+                            + sha1 + ").");
                 } catch (IllegalArgumentException exception) {
                     plugin.getLogger().warning("Invalid resource-pack URL for " + player.getName()
                             + ": " + exception.getMessage());
