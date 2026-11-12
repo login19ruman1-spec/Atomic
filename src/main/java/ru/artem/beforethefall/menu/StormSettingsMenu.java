@@ -21,6 +21,7 @@ public final class StormSettingsMenu implements Listener {
         MenuHolder holder=new MenuHolder();
         Inventory inv=Bukkit.createInventory(holder,27,ChatColor.DARK_GRAY+"Настройки пепельной бури");
         holder.inventory=inv;
+        inv.setItem(4,item(Material.DEEPSLATE,"&6Защита глубиной","&7Граница: &f"+plugin.getConfig().getDouble("radiation.underground-depth-limit",20.0)+" блоков","&eНажми: изменить"));
         inv.setItem(10,item(Material.FIREWORK_STAR,"&6Плотность радиоактивного пепла","&7Частиц за цикл: &f"+plugin.getConfig().getInt("ash-storm.particle-count",220),"&eНажми: изменить"));
         inv.setItem(13,item(Material.IRON_SWORD,"&cУрон от бури","&7Урон: &f"+plugin.getConfig().getDouble("ash-storm.damage",0.0),"&eНажми: изменить"));
         inv.setItem(16,item(Material.ENDER_EYE,"&5Затемнение","&7Включено: &f"+plugin.getConfig().getBoolean("ash-storm.blindness",true),"&eНажми: переключить"));
@@ -32,6 +33,7 @@ public final class StormSettingsMenu implements Listener {
         e.setCancelled(true);
         if(!(e.getWhoClicked() instanceof Player p)||e.getClickedInventory()!=e.getView().getTopInventory())return;
         switch(e.getSlot()){
+            case 4 -> cycleDouble("radiation.underground-depth-limit",new double[]{10,15,20,25,30,40},20);
             case 10 -> cycleInt("ash-storm.particle-count",new int[]{100,220,350,500},220);
             case 13 -> cycleDouble("ash-storm.damage",new double[]{0,1,2,4},0);
             case 16 -> plugin.getConfig().set("ash-storm.blindness",!plugin.getConfig().getBoolean("ash-storm.blindness",true));
