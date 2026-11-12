@@ -37,7 +37,7 @@ tasks.named('generateAtomicResourcePack') {
             if (!encodedFile.isFile()) {
                 throw new GradleException('Missing protective suit texture source: ' + encodedFile)
             }
-            def encoded = encodedFile.getText('UTF-8').replaceAll('\\\\s+', '')
+            def encoded = encodedFile.getText('UTF-8').replaceAll('\\s+', '')
             byte[] pngBytes
             try {
                 pngBytes = java.util.Base64.decoder.decode(encoded)
