@@ -39,8 +39,26 @@ jobs:
           unzip -l build/resourcepack.zip | grep -E 'assets/beforethefall/textures/item/(nuclear_bomb|nuclear_explosion|gas_mask|gas_filter|dosimeter).png'
           unzip -l build/resourcepack.zip | grep -E 'assets/beforethefall/textures/gui/gasmask_overlay(_ash|_cracked)?.png'
           unzip -l build/resourcepack.zip | grep -E 'assets/beforethefall/sounds/blast/(close|wave|distant).ogg'
+          unzip -l build/resourcepack.zip | grep -E 'assets/beforethefall/sounds/(gas-mask/(equip|filter|breath|empty)|dosimeter/measure).ogg'
+          unzip -l build/resourcepack.zip | grep -E 'assets/beforethefall/equipment/protective_suit.json'
+          unzip -l build/resourcepack.zip | grep -E 'assets/beforethefall/textures/entity/equipment/(humanoid|humanoid_leggings)/protective_suit.png'
+          unzip -p build/resourcepack.zip assets/beforethefall/sounds.json | grep -E 'gas_mask_on|gas_mask_filter|gas_mask_breath|gas_mask_empty|dosimeter_measure|blast_close|blast_wave|blast_distant'
+          python - <<'PY'
+          import struct, zipfile
+          with zipfile.ZipFile('build/resourcepack.zip') as pack:
+              for name in (
+                  'assets/beforethefall/textures/entity/equipment/humanoid/protective_suit.png',
+                  'assets/beforethefall/textures/entity/equipment/humanoid_leggings/protective_suit.png',
+              ):
+                  data = pack.read(name)
+                  assert data[:8] == b'\\x89PNG\\r\\n\\x1a\\n', f'{name} is not PNG'
+                  width, height = struct.unpack('>II', data[16:24])
+                  assert (width, height) == (64, 32), f'{name}: expected 64x32, got {width}x{height}'
+          print('Protective suit textures: valid 64x32 PNGs')
+          PY
 
       - name: Publish resource pack for automatic client download
+        if: github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: resourcepack-latest
