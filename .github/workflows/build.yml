@@ -51,7 +51,7 @@ jobs:
                   'assets/beforethefall/textures/entity/equipment/humanoid_leggings/protective_suit.png',
               ):
                   data = pack.read(name)
-                  assert data[:8] == b'\\x89PNG\\r\\n\\x1a\\n', f'{name} is not PNG'
+                  assert data[:8] == b'\x89PNG\r\n\x1a\n', f'{name} is not PNG'
                   width, height = struct.unpack('>II', data[16:24])
                   assert (width, height) == (64, 32), f'{name}: expected 64x32, got {width}x{height}'
           print('Protective suit textures: valid 64x32 PNGs')
