@@ -61,13 +61,13 @@ jobs:
         if: github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: resourcepack4-latest
+          tag_name: resourcepack5-latest
           name: Atomic resource pack (verified latest)
           prerelease: true
           make_latest: false
           overwrite_files: true
           files: |
-            build/resources/main/resourcepack.zip
+            build/resourcepack.zip
             build/libs/BeforeTheFall-Paper-*.jar
       - name: Upload plugin JAR
         uses: actions/upload-artifact@v4
