@@ -210,18 +210,18 @@ public final class NuclearBlastManager {
         ItemMeta meta = sprite.getItemMeta();
         meta.setItemModel(new NamespacedKey(plugin, "nuclear_explosion"));
         sprite.setItemMeta(meta);
-        ItemDisplay display = world.spawn(center.clone().add(0, 8, 0), ItemDisplay.class);
+        ItemDisplay display = world.spawn(center.clone().add(0, 3, 0), ItemDisplay.class);
         display.setItemStack(sprite);
         display.setBillboard(Display.Billboard.CENTER);
         display.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
-        display.setViewRange(4.0f);
+        display.setViewRange(8.0f);
         float scale = Math.max(0.65f, Math.min(1.45f, power / 18.0f));
         display.setTransformation(new Transformation(new Vector3f(), new Quaternionf(), new Vector3f(scale, scale, scale), new Quaternionf()));
         new BukkitRunnable() {
             int age = 0;
             @Override public void run() {
                 age++;
-                if (!display.isValid() || age > 100) { display.remove(); cancel(); return; }
+                if (!display.isValid() || age > 300) { display.remove(); cancel(); return; }
                 float grow = scale * (1.0f + Math.min(5.5f, age / 13.0f));
                 display.setTransformation(new Transformation(new Vector3f(), new Quaternionf(), new Vector3f(grow, grow, grow), new Quaternionf()));
                 display.setInterpolationDelay(0);
