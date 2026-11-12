@@ -63,7 +63,6 @@ jobs:
         with:
           tag_name: resourcepack7-latest
           name: Atomic resource pack (verified latest)
-          draft: true
           prerelease: true
           make_latest: false
           overwrite_files: true
