@@ -3,6 +3,7 @@ package ru.artem.beforethefall.radiation;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.Location;
@@ -18,7 +19,7 @@ import ru.artem.beforethefall.BeforeTheFallPlugin;
 
 import java.util.*;
 
-public final class RadiationManager {
+public final class RadiationManager implements Listener {
     private final BeforeTheFallPlugin plugin;
     private final Map<UUID, Double> doses = new HashMap<>();
     private final List<FalloutZone> fallout = new ArrayList<>();
@@ -262,7 +263,7 @@ public final class RadiationManager {
             if (distance > zone.radius) continue;
             double depthLimit = Math.max(1.0, plugin.getConfig().getDouble("radiation.underground-depth-limit", 20.0));
             double depth = zone.y - location.getY();
-            if (depth >= depthLimit) continue;
+            if (depth > depthLimit) continue;
             double minFactor = plugin.getConfig().getDouble("radiation.underground-min-factor", 0.15);
             double undergroundFactor = depth <= 0.0 ? 1.0 : 1.0 - (1.0 - minFactor) * (depth / depthLimit);
             double remaining = 1.0 - distance / zone.radius;
