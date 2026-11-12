@@ -52,7 +52,7 @@ aftermath:
   terrain-radius: 900.0
   contamination-hours: 72
 resource-pack:
-  url: "https://github.com/login19ruman1-spec/Atomic/releases/download/resourcepack8-latest/resourcepack.zip"
+  url: "https://github.com/login19ruman1-spec/Atomic/releases/download/resourcepack9-latest/resourcepack.zip"
 messages:
   prefix: '&8[&6BeforeTheFall&8] &r'
   no-permission: '&cНедостаточно прав.'
