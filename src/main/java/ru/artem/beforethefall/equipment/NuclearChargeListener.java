@@ -140,6 +140,7 @@ public final class NuclearChargeListener implements Listener {
         } else if (event.getAction() == Action.LEFT_CLICK_BLOCK) {
             Block target = findAdjacentCharge(event.getClickedBlock());
             if (target != null && !detonatingCharges.contains(key(target))) {
+                event.setCancelled(true);
                 placedCharges.remove(key(target));
                 removeDisplay(key(target));
                 save();
