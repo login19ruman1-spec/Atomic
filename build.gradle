@@ -1,6 +1,6 @@
 plugins { id 'java' }
 group = 'ru.artem.beforethefall'
-version = '0.2.2-atomic'
+version = '0.2.3-atomic'
 repositories { mavenCentral(); maven { url = 'https://repo.papermc.io/repository/maven-public/' } }
 dependencies { compileOnly 'io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT'; testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4' }
 java { toolchain { languageVersion = JavaLanguageVersion.of(21) } }
