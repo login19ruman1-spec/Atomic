@@ -6,6 +6,7 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
+import org.bukkit.inventory.meta.components.EquippableComponent;
 import org.bukkit.persistence.PersistentDataType;
 import ru.artem.beforethefall.BeforeTheFallPlugin;
 import java.util.List;
@@ -14,7 +15,11 @@ public final class ProtectiveSuitManager {
  public ProtectiveSuitManager(BeforeTheFallPlugin plugin){this.plugin=plugin;marker=new NamespacedKey(plugin,"radiation_suit_piece");}
  public ItemStack createPiece(Material type,String part){
   ItemStack item=new ItemStack(type); LeatherArmorMeta meta=(LeatherArmorMeta)item.getItemMeta();
-  meta.setColor(Color.fromRGB(232,190,34)); meta.setDisplayName(ChatColor.GOLD+"Защитный костюм — "+part);
+  meta.setColor(Color.fromRGB(232,190,34));
+  EquippableComponent equipment = meta.getEquippable();
+  equipment.setModel(new NamespacedKey(plugin,"protective_suit"));
+  meta.setEquippable(equipment);
+  meta.setDisplayName(ChatColor.GOLD+"Защитный костюм — "+part);
   meta.setLore(List.of(ChatColor.GRAY+"Жёлтая защитная экипировка",ChatColor.GREEN+"Часть радиационного комплекта"));
   meta.getPersistentDataContainer().set(marker,PersistentDataType.BYTE,(byte)1); item.setItemMeta(meta); return item;
  }
