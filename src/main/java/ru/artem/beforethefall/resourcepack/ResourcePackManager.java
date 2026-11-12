@@ -17,7 +17,9 @@ import java.util.HexFormat;
 
 public final class ResourcePackManager implements Listener {
     private static final String RELEASE_URL =
-            "https://github.com/login19ruman1-spec/Atomic/releases/download/resourcepack-latest/resourcepack.zip";
+            "https://github.com/login19ruman1-spec/Atomic/releases/download/resourcepack9-latest/resourcepack.zip";
+    private static final String PROJECT_RELEASE_PREFIX =
+            "https://github.com/login19ruman1-spec/Atomic/releases/download/";
 
     private final BeforeTheFallPlugin plugin;
     private byte[] hash;
@@ -55,7 +57,19 @@ public final class ResourcePackManager implements Listener {
         }
 
         String configuredUrl = plugin.getConfig().getString("resource-pack.url", "").trim();
-        String url = configuredUrl.isEmpty() ? RELEASE_URL : configuredUrl;
+        String url;
+        if (configuredUrl.isEmpty() || configuredUrl.startsWith(PROJECT_RELEASE_PREFIX)) {
+            // Existing server config.yml files survive plugin upgrades. Migrate old Atomic
+            // release URLs so the client never downloads an older ZIP with a different SHA-1.
+            url = RELEASE_URL;
+            if (!url.equals(configuredUrl)) {
+                plugin.getConfig().set("resource-pack.url", RELEASE_URL);
+                plugin.saveConfig();
+                plugin.getLogger().info("Updated the outdated Atomic resource-pack URL in config.yml.");
+            }
+        } else {
+            url = configuredUrl;
+        }
 
         new BukkitRunnable() {
             @Override
@@ -66,7 +80,8 @@ public final class ResourcePackManager implements Listener {
                 try {
                     player.setResourcePack(url, hash);
                     plugin.getLogger().info("Sent resource pack request to " + player.getName()
-                            + " from " + url);
+                            + " from " + url + " (SHA-1 "
+                            + HexFormat.of().formatHex(hash) + ").");
                 } catch (IllegalArgumentException exception) {
                     plugin.getLogger().warning("Invalid resource-pack URL for " + player.getName()
                             + ": " + exception.getMessage());
