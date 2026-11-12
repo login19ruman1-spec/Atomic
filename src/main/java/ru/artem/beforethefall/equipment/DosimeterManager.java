@@ -123,7 +123,7 @@ public final class DosimeterManager implements Listener {
             scanning.add(player.getUniqueId());
             player.sendMessage(ChatColor.GREEN + "Непрерывное измерение включено. Держи дозиметр в руке.");
         }
-        player.playSound(player.getLocation(), "beforethefall:dosimeter_measure", SoundCategory.PLAYERS, 0.75f, 1.0f);
+        player.playSound(player.getLocation(), org.bukkit.Sound.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.PLAYERS, 0.75f, 1.0f);
         event.setCancelled(true);
     }
 }
