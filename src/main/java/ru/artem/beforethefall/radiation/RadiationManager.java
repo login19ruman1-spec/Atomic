@@ -1,6 +1,11 @@
 package ru.artem.beforethefall.radiation;
 
 import org.bukkit.Bukkit;
+import org.bukkit.NamespacedKey;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -14,13 +19,14 @@ import ru.artem.beforethefall.BeforeTheFallPlugin;
 
 import java.util.*;
 
-public final class RadiationManager {
+public final class RadiationManager implements Listener {
     private final BeforeTheFallPlugin plugin;
     private final Map<UUID, Double> doses = new HashMap<>();
     private final List<FalloutZone> fallout = new ArrayList<>();
     private final List<WaterZone> waterZones = new ArrayList<>();
     private BukkitTask task;
     private long ticks;
+    private final Map<UUID, Long> medicineUntil = new HashMap<>();
 
     public RadiationManager(BeforeTheFallPlugin plugin) {
         this.plugin = plugin;
@@ -102,7 +108,7 @@ public final class RadiationManager {
     public void addFalloutZone(Location center, double intensity, double radius, long durationTicks) {
         if (center.getWorld() == null) return;
         fallout.add(new FalloutZone(center.getWorld().getUID(), center.getX(), center.getY(), center.getZ(),
-                Math.max(0.0, intensity), Math.max(1.0, radius),
+                Math.min(35.0, Math.max(0.0, intensity)), Math.min(600.0, Math.max(1.0, radius)),
                 System.currentTimeMillis() + Math.max(0L, durationTicks) * 50L));
         save();
     }
@@ -159,7 +165,7 @@ public final class RadiationManager {
             try {
                 fallout.add(new FalloutZone(UUID.fromString(String.valueOf(value.get("world"))),
                         num(value.get("x")), num(value.get("y")), num(value.get("z")),
-                        num(value.get("intensity")), Math.max(1.0, num(value.get("radius"))),
+                        Math.min(35.0, num(value.get("intensity"))), Math.min(600.0, Math.max(1.0, num(value.get("radius")))),
                         (long) num(value.get("expires-at"))));
             } catch (RuntimeException ignored) {
                 plugin.getLogger().warning("Skipping malformed fallout zone.");
@@ -214,7 +220,10 @@ public final class RadiationManager {
                 intake += plugin.getConfig().getDouble("radiation.contaminated-water-intake", 1.25);
             }
 
-            double next = Math.max(0.0, get(player) - decay) + intake;
+            long medicineEnd = medicineUntil.getOrDefault(player.getUniqueId(), 0L);
+            double healing = medicineEnd > now ? plugin.getConfig().getDouble("radiation.medicine-decay-per-tick", 0.15) : decay;
+            if (medicineEnd <= now) medicineUntil.remove(player.getUniqueId());
+            double next = Math.max(0.0, get(player) - healing) + intake;
             doses.put(player.getUniqueId(), clamp(next));
 
             if (intake > 0.01 && ticks % 2 == 0) {
@@ -241,8 +250,15 @@ public final class RadiationManager {
             double radius = Math.max(1.0, num(zone.get("radius")));
             double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
             if (distance > radius) continue;
+            double depthLimit = Math.max(1.0, plugin.getConfig().getDouble("radiation.underground-depth-limit", 20.0));
+            double depth = num(zone.get("y")) - location.getY();
+            double minFactor = plugin.getConfig().getDouble("radiation.underground-min-factor", 0.15);
+            double undergroundFactor = depth > depthLimit ? 0.0
+                    : depth <= 0.0 ? 1.0
+                    : 1.0 - (1.0 - minFactor) * (depth / depthLimit);
             double remaining = 1.0 - distance / radius;
-            result += num(zone.get("level")) * (0.08 + 0.92 * Math.pow(remaining, 1.35));
+            result += num(zone.get("level")) * undergroundFactor
+                    * (0.08 + 0.92 * Math.pow(remaining, 1.35));
         }
 
         for (FalloutZone zone : fallout) {
@@ -252,9 +268,13 @@ public final class RadiationManager {
             double dz = location.getZ() - zone.z;
             double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
             if (distance > zone.radius) continue;
+            double depthLimit = Math.max(1.0, plugin.getConfig().getDouble("radiation.underground-depth-limit", 20.0));
+            double depth = zone.y - location.getY();
+            if (depth > depthLimit) continue;
+            double minFactor = plugin.getConfig().getDouble("radiation.underground-min-factor", 0.15);
+            double undergroundFactor = depth <= 0.0 ? 1.0 : 1.0 - (1.0 - minFactor) * (depth / depthLimit);
             double remaining = 1.0 - distance / zone.radius;
-            // Broad fallout plume: still measurable near the edge of the 3 km contaminated area.
-            result += zone.intensity * (0.08 + 0.92 * Math.pow(remaining, 1.35));
+            result += zone.intensity * undergroundFactor * (0.08 + 0.92 * Math.pow(remaining, 1.35));
         }
         return result * plugin.getConfig().getDouble("radiation.intake-scale", 0.12);
     }
@@ -290,6 +310,22 @@ public final class RadiationManager {
             player.removePotionEffect(PotionEffectType.SLOWNESS);
         }
         if (dose >= 90 && ticks % 3 == 0) player.damage(1.0);
+    }
+
+    public void applyMedicine(Player player) {
+        long duration = Math.max(20L, plugin.getConfig().getLong("radiation.medicine-duration-seconds", 300L)) * 1000L;
+        medicineUntil.put(player.getUniqueId(), System.currentTimeMillis() + duration);
+        int slowTicks = (int)Math.min(1200L, plugin.getConfig().getLong("radiation.medicine-slowness-seconds", 60L) * 20L);
+        player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, Math.max(20, slowTicks), 0, true, false, true));
+        player.sendMessage(org.bukkit.ChatColor.GREEN + "Лекарство действует: радиационная доза снижается быстрее.");
+    }
+
+    @EventHandler
+    public void onMedicineConsume(org.bukkit.event.player.PlayerItemConsumeEvent event) {
+        ItemStack item = event.getItem();
+        if (!item.hasItemMeta()) return;
+        Byte marker = item.getItemMeta().getPersistentDataContainer().get(new NamespacedKey(plugin, "radiation_medicine"), PersistentDataType.BYTE);
+        if (marker != null && marker == (byte)1) applyMedicine(event.getPlayer());
     }
 
     private double clamp(double value) {

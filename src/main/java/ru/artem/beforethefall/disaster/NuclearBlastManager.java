@@ -54,6 +54,7 @@ public final class NuclearBlastManager {
         playGlobalSoundLayers(world, center);
         startEarthquake(world, center);
         spawnTexturedBlast(world, center, p);
+        scheduleSecondaryBursts(world, center);
         // Remove pre-existing loose drops in the immediate destruction zone.
         double cleanupRadius = plugin.getConfig().getDouble("nuclear-blast.block-radius", 90.0);
         for (org.bukkit.entity.Entity entity : world.getNearbyEntities(center, cleanupRadius, cleanupRadius, cleanupRadius)) {
@@ -104,26 +105,60 @@ public final class NuclearBlastManager {
         }.runTaskTimer(plugin, 1L, 1L);
     }
 
-    private void playGlobalSoundLayers(World world, Location center) {
-        // Play at the listener's position: a positional sound at the blast would become
-        // inaudible long before the configured 2-3 km ranges. Exactly one layer is used
-        // per listener, so the distant, wave and close recordings do not stack.
-        double closeRadius = plugin.getConfig().getDouble("nuclear-blast.close-sound-radius", 50.0);
-        double waveRadius = plugin.getConfig().getDouble("nuclear-blast.shock-sound-radius", 2000.0);
-        double distantRadius = plugin.getConfig().getDouble("nuclear-blast.distant-sound-radius", 3000.0);
-
-        for (Player player : world.getPlayers()) {
-            double distance = player.getLocation().distance(center);
-            if (distance <= closeRadius) {
-                player.playSound(player.getLocation(), "beforethefall:blast_close", SoundCategory.MASTER, 1.0f, 1.0f);
-            } else if (distance <= waveRadius) {
-                float volume = (float) Math.max(0.35, 0.85 - (distance / waveRadius) * 0.35);
-                player.playSound(player.getLocation(), "beforethefall:blast_wave", SoundCategory.MASTER, volume, 1.0f);
-            } else if (distance <= distantRadius) {
-                float volume = (float) Math.max(0.20, 0.55 - (distance / distantRadius) * 0.25);
-                player.playSound(player.getLocation(), "beforethefall:blast_distant", SoundCategory.MASTER, volume, 1.0f);
-            }
+    private void scheduleSecondaryBursts(World world, Location center) {
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        int bursts = random.nextInt(8, 13);
+        for (int i = 0; i < bursts; i++) {
+            double angle = random.nextDouble(0.0, Math.PI * 2.0);
+            double distance = random.nextDouble(25.0, 32.0);
+            Location burst = center.clone().add(
+                    Math.cos(angle) * distance,
+                    random.nextDouble(-2.0, 3.0),
+                    Math.sin(angle) * distance
+            );
+            long delay = random.nextLong(1L, 4L);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                world.spawnParticle(Particle.EXPLOSION_EMITTER, burst, 1);
+                world.spawnParticle(Particle.FLAME, burst, 18, 1.2, 0.7, 1.2, 0.04);
+                world.playSound(burst, Sound.ENTITY_GENERIC_EXPLODE,
+                        SoundCategory.BLOCKS, 2.0f, 0.65f);
+                for (Player target : world.getPlayers()) {
+                    if (target.getLocation().distanceSquared(burst) > 5.0 * 5.0) continue;
+                    if (plugin.getBunkerManager() != null
+                            && plugin.getBunkerManager().isProtected(target.getLocation())) continue;
+                    target.damage(6.0);
+                    target.setFireTicks(Math.max(target.getFireTicks(), 60));
+                }
+                Block fireBase = burst.getBlock();
+                if (fireBase.getType().isAir()
+                        && fireBase.getRelative(0, -1, 0).getType().isSolid()) {
+                    fireBase.setType(Material.FIRE, false);
+                }
+            }, delay);
         }
+    }
+
+    private void playGlobalSoundLayers(World world, Location center) {
+        final double maxDistance = plugin.getConfig().getDouble("nuclear-blast.close-sound-radius", 500.0);
+        for (Player player : world.getPlayers()) {
+            if (player.getLocation().distanceSquared(center) > maxDistance * maxDistance) continue;
+
+            boolean underground = player.getLocation().getY() < 60
+                    || player.getLocation().getBlock().getLightFromSky() == 0;
+            String sound = underground
+                    ? "beforethefall:blast_distant"
+                    : "beforethefall:blast_close";
+
+            player.playSound(center, sound, SoundCategory.MASTER, 1.0f, 1.0f);
+        }
+
+        long delay = Math.max(20L, plugin.getConfig().getLong("nuclear-blast.shockwave-delay-ticks", 30L));
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            for (Player player : world.getPlayers()) {
+                if (player.getLocation().distanceSquared(center) > maxDistance * maxDistance) continue;
+                player.playSound(center, "beforethefall:blast_wave", SoundCategory.MASTER, 0.35f, 1.0f);
+            }
+        }, delay);
     }
 
     private void startEarthquake(World world, Location center) {
@@ -173,20 +208,20 @@ public final class NuclearBlastManager {
         // Use the actual supplied Blockbench nuclear_explosion model, not a particle placeholder.
         ItemStack sprite = new ItemStack(Material.FIREWORK_STAR);
         ItemMeta meta = sprite.getItemMeta();
-        meta.setCustomModelData(6);
+        meta.setItemModel(new NamespacedKey(plugin, "nuclear_explosion"));
         sprite.setItemMeta(meta);
-        ItemDisplay display = world.spawn(center.clone().add(0, 8, 0), ItemDisplay.class);
+        ItemDisplay display = world.spawn(center.clone().add(0, 3, 0), ItemDisplay.class);
         display.setItemStack(sprite);
         display.setBillboard(Display.Billboard.CENTER);
         display.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
-        display.setViewRange(4.0f);
+        display.setViewRange(8.0f);
         float scale = Math.max(0.65f, Math.min(1.45f, power / 18.0f));
         display.setTransformation(new Transformation(new Vector3f(), new Quaternionf(), new Vector3f(scale, scale, scale), new Quaternionf()));
         new BukkitRunnable() {
             int age = 0;
             @Override public void run() {
                 age++;
-                if (!display.isValid() || age > 100) { display.remove(); cancel(); return; }
+                if (!display.isValid() || age > 300) { display.remove(); cancel(); return; }
                 float grow = scale * (1.0f + Math.min(5.5f, age / 13.0f));
                 display.setTransformation(new Transformation(new Vector3f(), new Quaternionf(), new Vector3f(grow, grow, grow), new Quaternionf()));
                 display.setInterpolationDelay(0);

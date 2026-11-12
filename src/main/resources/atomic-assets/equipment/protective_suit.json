@@ -1,0 +1,26 @@
+{
+  "layers": {
+    "humanoid": [
+      {
+        "texture": "minecraft:leather",
+        "dyeable": {
+          "color_when_undyed": 15253026
+        }
+      },
+      {
+        "texture": "beforethefall:protective_suit"
+      }
+    ],
+    "humanoid_leggings": [
+      {
+        "texture": "minecraft:leather",
+        "dyeable": {
+          "color_when_undyed": 15253026
+        }
+      },
+      {
+        "texture": "beforethefall:protective_suit"
+      }
+    ]
+  }
+}

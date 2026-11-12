@@ -20,29 +20,101 @@ tasks.named('generateAtomicResourcePack') {
         copyAssetTree('photos', 'assets/beforethefall/textures/photos')
         // Optional custom item/block model JSON files, preserving relative paths.
         copyAssetTree('models', 'assets/beforethefall/models')
+        // Paper 1.21.4 wearable equipment definitions.
+        copyAssetTree('equipment', 'assets/beforethefall/equipment')
         // Gas-mask upload area: drop PNGs, item model JSONs and OGG sounds into the three dedicated folders.
         copyAssetTree('gas-mask/textures', 'assets/beforethefall/textures/item')
         copyAssetTree('gas-mask/models', 'assets/beforethefall/models/item')
 
-        // Copy uploaded audio bytes into the actual resource pack before it is zipped.
+        // Decode the editable source textures for the protective suit's equipment layers.
+        // These are 64x32 PNGs in the vanilla 1.21.4 humanoid armor UV layout.
+        def armorSources = [
+            'protective_suit_humanoid.png.base64': 'assets/beforethefall/textures/entity/equipment/humanoid/protective_suit.png',
+            'protective_suit_leggings.png.base64': 'assets/beforethefall/textures/entity/equipment/humanoid_leggings/protective_suit.png'
+        ]
+        armorSources.each { sourceName, targetPath ->
+            def encodedFile = new File(atomicAssetsDir, 'armor/' + sourceName)
+            if (!encodedFile.isFile()) {
+                throw new GradleException('Missing protective suit texture source: ' + encodedFile)
+            }
+            def encoded = encodedFile.getText('UTF-8').replaceAll('\\s+', '')
+            byte[] pngBytes
+            try {
+                pngBytes = java.util.Base64.decoder.decode(encoded)
+            } catch (IllegalArgumentException ex) {
+                throw new GradleException('Invalid base64 protective suit texture: ' + encodedFile, ex)
+            }
+            if (pngBytes.length < 50 || pngBytes[0] != (byte)0x89 || pngBytes[1] != 0x50
+                    || pngBytes[2] != 0x4e || pngBytes[3] != 0x47) {
+                throw new GradleException('Decoded protective suit texture is not a PNG: ' + encodedFile)
+            }
+            def output = new File(packRoot, targetPath)
+            output.parentFile.mkdirs()
+            output.bytes = pngBytes
+        }
+
+        // Copy uploaded OGG files into the resource pack.
         def soundsDir = new File(atomicAssetsDir, 'sounds')
         def gasMaskSoundsDir = new File(atomicAssetsDir, 'gas-mask/sounds')
+        def packagedSoundsDir = new File(packRoot, 'assets/beforethefall/sounds')
         if (gasMaskSoundsDir.exists()) {
             copy {
                 from gasMaskSoundsDir
                 include '**/*.ogg'
-                into new File(packRoot, 'assets/beforethefall/sounds')
+                into packagedSoundsDir
             }
         }
         if (soundsDir.exists()) {
             copy {
                 from soundsDir
                 include '**/*.ogg'
-                into new File(packRoot, 'assets/beforethefall/sounds')
+                into packagedSoundsDir
             }
         }
 
-        // Sound files are uploaded under sounds/, and exposed as stable sound event IDs.
+        // The small original OGG sound sources are kept as base64 text so the
+        // repository upload API can preserve them losslessly. Decode them here.
+        def encodedSounds = [
+            'gas-mask/equip' : 'gas-mask/equip.ogg.b64',
+            'gas-mask/filter': 'gas-mask/filter.ogg.b64',
+            'gas-mask/breath': 'gas-mask/breath.ogg.b64',
+            'gas-mask/empty' : 'gas-mask/empty.ogg.b64',
+            'dosimeter/measure': 'dosimeter/measure.ogg.b64'
+        ]
+        encodedSounds.each { relativePath, encodedName ->
+            def encodedFile = new File(gasMaskSoundsDir, encodedName)
+            if (!encodedFile.isFile()) {
+                throw new GradleException("Missing encoded sound source: " + encodedFile)
+            }
+            def encoded = encodedFile.getText('UTF-8').replaceAll('\\s+', '')
+            byte[] audio
+            try {
+                audio = java.util.Base64.decoder.decode(encoded)
+            } catch (IllegalArgumentException ex) {
+                throw new GradleException("Invalid base64 sound source: " + encodedFile, ex)
+            }
+            if (audio.length < 100 || new String(audio, 0, 4, 'US-ASCII') != 'OggS') {
+                throw new GradleException("Decoded sound is not a valid OGG stream header: " + encodedFile)
+            }
+            def output = new File(packagedSoundsDir, relativePath + '.ogg')
+            output.parentFile.mkdirs()
+            output.bytes = audio
+        }
+
+        // Refuse to publish a resource pack if any sound called by the plugin is absent.
+        def requiredSoundPaths = [
+            'blast/close', 'blast/wave', 'blast/distant',
+            'gas-mask/equip', 'gas-mask/filter', 'gas-mask/breath', 'gas-mask/empty',
+            'dosimeter/measure'
+        ]
+        def missingSounds = requiredSoundPaths.findAll { relativePath ->
+            !new File(packagedSoundsDir, relativePath + '.ogg').isFile()
+        }
+        if (!missingSounds.isEmpty()) {
+            throw new GradleException("Missing required OGG sounds in generated resource pack: " + missingSounds.join(', '))
+        }
+
+        // Register sound event IDs against files that were actually copied or decoded.
         def soundEvents = [
             blast_close: 'blast/close',
             blast_wave: 'blast/wave',
@@ -55,44 +127,46 @@ tasks.named('generateAtomicResourcePack') {
             dosimeter_measure: 'dosimeter/measure'
         ]
         def soundsJson = [:]
-        ['gas_mask_on': 'gas-mask/equip', 'gas_mask_filter': 'gas-mask/filter', 'gas_mask_breath': 'gas-mask/breath', 'gas_mask_empty': 'gas-mask/empty'].each { eventName, relativePath ->
-            def soundFile = new File(gasMaskSoundsDir, relativePath + '.ogg')
-            if (soundFile.exists()) {
-                soundsJson[eventName] = [sounds: [[name: 'beforethefall:' + relativePath, stream: true]]]
-            }
-        }
-        // New, simple upload layout: all sound categories live under gas-mask/sounds/.
-        ['blast_close': 'blast/close', 'blast_wave': 'blast/wave', 'blast_distant': 'blast/distant',
-         'dosimeter_measure': 'dosimeter/measure'].each { eventName, relativePath ->
-            def soundFile = new File(gasMaskSoundsDir, relativePath + '.ogg')
-            if (soundFile.exists()) {
+        [
+            'gas_mask_on': 'gas-mask/equip',
+            'gas_mask_filter': 'gas-mask/filter',
+            'gas_mask_breath': 'gas-mask/breath',
+            'gas_mask_empty': 'gas-mask/empty'
+        ].each { eventName, relativePath ->
+            if (new File(packagedSoundsDir, relativePath + '.ogg').isFile()) {
                 soundsJson[eventName] = [sounds: [[name: 'beforethefall:' + relativePath, stream: true]]]
             }
         }
         soundEvents.each { eventName, soundPath ->
-            def soundFile = new File(soundsDir, soundPath + '.ogg')
-            if (soundFile.exists()) {
-                soundsJson[eventName] = [sounds: [[name: "beforethefall:" + soundPath, stream: true]]]
+            if (new File(packagedSoundsDir, soundPath + '.ogg').isFile()) {
+                soundsJson[eventName] = [sounds: [[name: 'beforethefall:' + soundPath, stream: true]]]
             }
         }
+        // Use the specified maximum listening distance for all blast layers.
+        ['blast_close', 'blast_distant', 'blast_wave'].each { eventName ->
+            if (soundsJson.containsKey(eventName)) {
+                soundsJson[eventName].attenuation_distance = 500
+            }
+        }
+
         if (!soundsJson.isEmpty()) {
             def soundJsonFile = new File(packRoot, 'assets/beforethefall/sounds.json')
             soundJsonFile.parentFile.mkdirs()
             soundJsonFile.setText(groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(soundsJson)), 'UTF-8')
         }
 
-        // The Blockbench dosimeter is exported by build.gradle; bind it to a clock item.
-        def clockModel = new File(packRoot, 'assets/minecraft/models/item/clock.json')
-        clockModel.parentFile.mkdirs()
-        clockModel.setText(groovy.json.JsonOutput.toJson([
-            parent: 'minecraft:item/generated',
-            textures: [layer0: 'minecraft:item/clock'],
-            overrides: [[predicate: [custom_model_data: 30], model: 'beforethefall:item/dosimeter']]
-        ]), 'UTF-8')
+        // 1.21.4 item definitions are addressed by ItemMeta#setItemModel.
+        ['dosimeter', 'gas_mask', 'gas_filter', 'nuclear_bomb'].each { id ->
+            def itemDefinition = new File(packRoot, "assets/beforethefall/items/${id}.json")
+            itemDefinition.parentFile.mkdirs()
+            itemDefinition.setText(groovy.json.JsonOutput.toJson([
+                model: [type: 'minecraft:model', model: "beforethefall:item/${id}"]
+            ]), 'UTF-8')
+        }
 
         // Keep user-supplied files visible in the build log for easier troubleshooting.
         def uploaded = []
-        ['textures', 'photos', 'models', 'sounds', 'gas-mask'].each { folder ->
+        ['textures', 'photos', 'models', 'equipment', 'armor', 'sounds', 'gas-mask'].each { folder ->
             def dir = new File(atomicAssetsDir, folder)
             if (dir.exists()) {
                 dir.eachFileRecurse { f -> if (f.isFile()) uploaded << f.toString().replace(atomicAssetsDir.toString() + File.separator, '') }

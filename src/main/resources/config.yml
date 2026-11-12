@@ -3,6 +3,11 @@ radiation:
   tick-interval: 40
   intake-scale: 0.12
   decay-per-tick: 0.025
+  underground-depth-limit: 20.0
+  underground-min-factor: 0.15
+  medicine-duration-seconds: 300
+  medicine-decay-per-tick: 0.15
+  medicine-slowness-seconds: 60
   warning-threshold: 25.0
   sickness-threshold: 50.0
   severe-threshold: 75.0
@@ -24,20 +29,21 @@ ash-storm:
 nuclear-blast:
   default-power: 18.0
   destroy-blocks: true
-  block-radius: 90
-  vertical-destruction-radius: 160
-  block-edits-per-tick: 5000
+  block-radius: 20
+  vertical-destruction-radius: 24
+  block-edits-per-tick: 300
   shockwave-radius-per-power: 14.0
   fallout-intensity: 100.0
-  fallout-radius: 3000.0
-  fallout-propagation-radius: 3000.0
+  fallout-radius: 1500.0
+  fallout-propagation-radius: 1500.0
   fallout-duration-hours: 72
-  distant-sound-radius: 3000.0
-  shock-sound-radius: 2000.0
-  close-sound-radius: 50.0
+  distant-sound-radius: 500.0
+  shock-sound-radius: 500.0
+  close-sound-radius: 500.0
+  shockwave-delay-ticks: 30
   placed-charges: []
 gas-mask:
-  filter-duration-seconds: 900
+  filter-duration-seconds: 600
 bunkers:
   radius: 12
   depth: 12
@@ -46,12 +52,12 @@ bunkers:
 aftermath:
   dark-sky: true
   dark-sky-days: 3
-  water-radius: 3000.0
-  water-contamination-radius: 3000.0
+  water-radius: 900.0
+  water-contamination-radius: 900.0
   terrain-radius: 900.0
   contamination-hours: 72
 resource-pack:
-  url: "https://github.com/login19ruman1-spec/Atomic/releases/download/resourcepack-latest/resourcepack.zip"
+  url: "https://github.com/login19ruman1-spec/Atomic/releases/download/resourcepack10-latest/resourcepack.zip"
 messages:
   prefix: '&8[&6BeforeTheFall&8] &r'
   no-permission: '&cНедостаточно прав.'

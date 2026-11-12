@@ -1,6 +1,6 @@
 plugins { id 'java' }
 group = 'ru.artem.beforethefall'
-version = '0.2.2-atomic'
+version = '0.2.3-atomic'
 repositories { mavenCentral(); maven { url = 'https://repo.papermc.io/repository/maven-public/' } }
 dependencies { compileOnly 'io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT'; testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4' }
 java { toolchain { languageVersion = JavaLanguageVersion.of(21) } }
@@ -17,7 +17,12 @@ tasks.register('generateAtomicResourcePack') {
   def png={String path,int w,int h,Closure paint->def f=new File(root,path);f.parentFile.mkdirs();def im=new java.awt.image.BufferedImage(w,h,java.awt.image.BufferedImage.TYPE_INT_ARGB);def g=im.createGraphics();g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,java.awt.RenderingHints.VALUE_ANTIALIAS_OFF);paint.call(g,im);g.dispose();javax.imageio.ImageIO.write(im,'png',f)}
   writeText('pack.mcmeta','{"pack":{"pack_format":46,"description":"BeforeTheFall Atomic Survival — gas mask and filter"}}')
   png('assets/minecraft/textures/block/snow.png',16,16){g,im->def rng=new java.util.Random(712367L);for(int y=0;y<16;y++)for(int x=0;x<16;x++){int n=rng.nextInt(5);int base=75+n*8;g.setColor(new java.awt.Color(base,base+2,base+3,255));g.fillRect(x,y,1,1)};g.setColor(new java.awt.Color(38,42,43));g.fillRect(2,3,2,1);g.fillRect(10,8,3,1);g.fillRect(5,13,2,1);g.setColor(new java.awt.Color(145,148,145));g.fillRect(6,2,2,1);g.fillRect(13,12,2,1);g.fillRect(1,10,1,2)}
-  writeText('assets/minecraft/models/item/firework_star.json','{"parent":"minecraft:item/generated","textures":{"layer0":"minecraft:item/firework_star"},"overrides":[{"predicate":{"custom_model_data":6},"model":"beforethefall:item/nuclear_explosion"}]}')
+  // 1.21.4 item definitions: ItemMeta#setItemModel resolves assets/beforethefall/items/<id>.json.
+  ['dosimeter','gas_filter','gas_mask','gas_mask_cracked','gas_mask_fogged','gas_mask_cracked_fogged','nuclear_bomb','nuclear_explosion'].each { id ->
+    writeText("assets/beforethefall/items/${id}.json", groovy.json.JsonOutput.toJson([
+      model: [type: 'minecraft:model', model: "beforethefall:item/${id}"]
+    ]))
+  }
   // Export user-supplied Blockbench free/item models and their embedded textures.
   // Export Blockbench sources from both the legacy source folder and the owner upload folder.
   // Prefer the current owner uploads; fall back to the legacy Blockbench folder.
@@ -60,6 +65,9 @@ tasks.register('generateAtomicResourcePack') {
       javax.imageio.ImageIO.write(variant,'png',new File(root,"assets/beforethefall/textures/item/gas_mask_${state}.png"))
      }
     }
+    // Blockbench stores UV coordinates in source-image pixels; Minecraft uses 0..16.
+    def textureWidth=Math.max(1, ((data.resolution?.width ?: texture.width ?: 16) as Number).intValue())
+    def textureHeight=Math.max(1, ((data.resolution?.height ?: texture.height ?: 16) as Number).intValue())
     def cubes=data.elements.findAll { it.type=='cube' && it.faces }
     def maxCoord=1.0d
     cubes.each { cube -> (cube.from+cube.to).each { value -> maxCoord=Math.max(maxCoord,Math.abs((value as Number).doubleValue())) } }
@@ -69,7 +77,18 @@ tasks.register('generateAtomicResourcePack') {
      def faces=[:]
      cube.faces.each { side, face ->
       if(face.texture!=null) {
-       def f=['uv':face.uv.collect { (it as Number).doubleValue() },'texture':'#0']
+       if(!(face.uv instanceof List) || face.uv.size()!=4) {
+        throw new GradleException("Invalid UV coordinates in " + bb.name + " (" + side + ")")
+       }
+       def uv=[]
+       face.uv.eachWithIndex { coordinate, index ->
+        double dimension=(index % 2 == 0) ? textureWidth : textureHeight
+        uv << (coordinate as Number).doubleValue() * 16.0d / dimension
+       }
+       if(uv.any { it < -0.001d || it > 16.001d }) {
+        throw new GradleException("UV coordinates outside Minecraft 0..16 range in " + bb.name + " (" + side + "): " + uv)
+       }
+       def f=['uv':uv,'texture':'#0']
        if(face.rotation) f.rotation=face.rotation
        faces[side]=f
       }
@@ -82,23 +101,32 @@ tasks.register('generateAtomicResourcePack') {
        'axis':['x','y','z'][axis],'angle':(rot[axis] as Number).doubleValue(),'rescale':(cube.rescale ?: false)]
      exported << element
     }
-    def json=['credit':'Blockbench model supplied by the project owner','parent':'minecraft:item/generated',
-      'textures':['layer0':"beforethefall:item/${modelName}",'0':"beforethefall:item/${modelName}"],'elements':exported]
+    // Render the exported cubes as a real 3-D item model, not a flat generated sprite.
+    def display=[
+      gui:[rotation:[30,225,0],translation:[0,0,0],scale:[0.625,0.625,0.625]],
+      ground:[rotation:[0,0,0],translation:[0,3,0],scale:[0.25,0.25,0.25]],
+      fixed:[rotation:[0,180,0],translation:[0,0,0],scale:[1.0,1.0,1.0]],
+      thirdperson_righthand:[rotation:[0,90,0],translation:[0,1.5,-2.75],scale:[0.375,0.375,0.375]],
+      thirdperson_lefthand:[rotation:[0,-90,0],translation:[0,1.5,-2.75],scale:[0.375,0.375,0.375]],
+      firstperson_righthand:[rotation:[0,-90,25],translation:[1.13,3.2,1.13],scale:[0.68,0.68,0.68]],
+      firstperson_lefthand:[rotation:[0,90,-25],translation:[1.13,3.2,1.13],scale:[0.68,0.68,0.68]]
+    ]
+    def json=['credit':'Blockbench model supplied by the project owner','parent':'minecraft:block/block',
+      'textures':['particle':"beforethefall:item/${modelName}",'0':"beforethefall:item/${modelName}"],
+      'elements':exported,'display':display]
     def modelFile=new File(root,"assets/beforethefall/models/item/${modelName}.json")
     modelFile.parentFile.mkdirs(); modelFile.setText(groovy.json.JsonOutput.toJson(json),'UTF-8')
     if(modelName=='gas_mask') {
      ['cracked','fogged','cracked_fogged'].each { state ->
       def variantJson=new LinkedHashMap(json)
-      variantJson.textures=['layer0':"beforethefall:item/gas_mask_${state}",'0':"beforethefall:item/gas_mask_${state}"]
+      variantJson.textures=['particle':"beforethefall:item/gas_mask_${state}",'0':"beforethefall:item/gas_mask_${state}"]
       def vf=new File(root,"assets/beforethefall/models/item/gas_mask_${state}.json")
       vf.parentFile.mkdirs(); vf.setText(groovy.json.JsonOutput.toJson(variantJson),'UTF-8')
      }
     }
    }
   }
-  writeText('assets/minecraft/models/item/leather_helmet.json','{"parent":"minecraft:item/generated","textures":{"layer0":"minecraft:item/leather_helmet"},"overrides":[{"predicate":{"custom_model_data":21},"model":"beforethefall:item/gas_mask"},{"predicate":{"custom_model_data":22},"model":"beforethefall:item/gas_mask_cracked"},{"predicate":{"custom_model_data":23},"model":"beforethefall:item/gas_mask_fogged"},{"predicate":{"custom_model_data":24},"model":"beforethefall:item/gas_mask_cracked_fogged"}]}')
-  writeText('assets/minecraft/models/item/paper.json','{"parent":"minecraft:item/generated","textures":{"layer0":"minecraft:item/paper"},"overrides":[{"predicate":{"custom_model_data":20},"model":"beforethefall:item/gas_filter"}]}')
-  writeText('assets/minecraft/models/item/tnt.json','{"parent":"minecraft:item/generated","textures":{"layer0":"minecraft:item/tnt"},"overrides":[{"predicate":{"custom_model_data":3},"model":"beforethefall:item/nuclear_bomb"}]}')
+
  }
 }
 processResources.dependsOn tasks.named('generateAtomicResourcePack')
