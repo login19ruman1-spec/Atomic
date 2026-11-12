@@ -70,11 +70,11 @@ public final class ResourcePackManager implements Listener {
             public void run() {
                 Player player = event.getPlayer();
                 if (!player.isOnline()) return;
-                player.sendResourcePack(
+                player.setResourcePack(
                         url,
-                        hash,
-                        Component.text("BeforeTheFall: модели, текстуры, HUD и звуки"),
-                        false
+                        hashHex,
+                        false,
+                        Component.text("BeforeTheFall: модели, текстуры, HUD и звуки")
                 );
                 plugin.getLogger().info("Requested resource pack for " + player.getName()
                         + " (SHA-1 " + hashHex + ")");
