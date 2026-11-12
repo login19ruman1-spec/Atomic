@@ -33,7 +33,7 @@ public final class StormSettingsMenu implements Listener {
         e.setCancelled(true);
         if(!(e.getWhoClicked() instanceof Player p)||e.getClickedInventory()!=e.getView().getTopInventory())return;
         switch(e.getSlot()){
-            case 4 -> cycleDouble("radiation.underground-depth-limit",new double[]{10,15,20,25,30,40},20);
+            case 4 -> cycleDouble("radiation.underground-depth-limit",new double[]{10,15,20,25,30,40,50,60,80,100,128},20);
             case 10 -> cycleInt("ash-storm.particle-count",new int[]{100,220,350,500},220);
             case 13 -> cycleDouble("ash-storm.damage",new double[]{0,1,2,4},0);
             case 16 -> plugin.getConfig().set("ash-storm.blindness",!plugin.getConfig().getBoolean("ash-storm.blindness",true));
